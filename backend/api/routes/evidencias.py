@@ -361,7 +361,12 @@ async def upload_evidencia(
     - evolucion_id: ID de la evolución clínica
     - etapa_tratamiento: "Antes", "Durante" o "Después"
     - observaciones: Notas opcionales
-    - file: Archivo de imagen (JPG, PNG)
+    - file: Archivo de imagen (JPG, PNG, WebP - máx 10MB)
+    
+    **Validaciones de seguridad:**
+    - MIME type validation (Content-Type header)
+    - Magic number validation (file signature)
+    - File size limit (10MB)
     
     **Nota:** Las fotos se guardan en el sistema de archivos local.
     En producción, considera usar S3 o similar.
@@ -384,12 +389,48 @@ async def upload_evidencia(
             detail="No tienes acceso a esta evolución"
         )
     
-    # Validar tipo de archivo
-    allowed_types = ["image/jpeg", "image/png", "image/webp"]
-    if file.content_type not in allowed_types:
+    # Validar tipo de archivo (MIME type)
+    allowed_mime_types = ["image/jpeg", "image/png", "image/webp"]
+    if file.content_type not in allowed_mime_types:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Tipo de archivo no permitido. Permitidos: {allowed_types}"
+            detail=f"Tipo de archivo no permitido. Solo se aceptan imágenes: JPEG, PNG, WebP"
+        )
+    
+    # Leer contenido del archivo
+    content = await file.read()
+    
+    # Validar tamaño del archivo (10MB máximo)
+    max_size = 10 * 1024 * 1024  # 10MB
+    if len(content) > max_size:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"Archivo demasiado grande. Tamaño máximo: 10MB"
+        )
+    
+    # Validar magic numbers (primeros bytes del archivo) para verificar tipo real
+    # Esto previene ataques de extensión falsa
+    magic_numbers = {
+        b'\xff\xd8\xff': 'image/jpeg',  # JPEG
+        b'\x89PNG\r\n\x1a\n': 'image/png',  # PNG
+        b'RIFF': 'image/webp',  # WebP (necesita verificar WEBP después de RIFF)
+    }
+    
+    file_type_valid = False
+    for magic, mime in magic_numbers.items():
+        if content.startswith(magic):
+            # Para WebP, verificar adicional
+            if mime == 'image/webp' and content[8:12] == b'WEBP':
+                file_type_valid = True
+                break
+            elif mime != 'image/webp':
+                file_type_valid = True
+                break
+    
+    if not file_type_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El archivo no es una imagen válida (verificación de firma de archivo falló)"
         )
     
     # Generar nombre único para el archivo
@@ -403,7 +444,6 @@ async def upload_evidencia(
     
     # Guardar archivo
     file_path = os.path.join(upload_dir, filename)
-    content = await file.read()
     with open(file_path, "wb") as f:
         f.write(content)
     

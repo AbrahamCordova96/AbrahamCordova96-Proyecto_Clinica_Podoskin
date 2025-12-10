@@ -12,6 +12,10 @@
 # 2. Verificamos credenciales contra la BD
 # 3. Si son correctas, generamos token JWT
 # 4. Usuario usa el token en requests posteriores
+#
+# SEGURIDAD:
+# - Rate limiting: 5 intentos de login por minuto por IP
+# - Password migration: Automatic upgrade from bcrypt to Argon2
 # =============================================================================
 
 from datetime import datetime, timezone
@@ -19,12 +23,17 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from backend.api.deps.database import get_auth_db
 from backend.api.deps.auth import get_current_active_user
 from backend.api.core.security import create_access_token, Token
 from backend.schemas.auth.models import SysUsuario, AuditLog
-from backend.schemas.auth.auth_utils import verify_password, hash_password
+from backend.schemas.auth.auth_utils import verify_password, hash_password, needs_rehash
+
+# Rate limiter for auth endpoints
+limiter = Limiter(key_func=get_remote_address)
 
 
 # =============================================================================
@@ -74,9 +83,10 @@ class ChangePasswordResponse(BaseModel):
 # =============================================================================
 
 @router.post("/login", response_model=Token)
+@limiter.limit("5/minute")  # Rate limit: 5 login attempts per minute per IP
 async def login(
-    credentials: LoginRequest,
     request: Request,
+    credentials: LoginRequest,
     db: Session = Depends(get_auth_db)
 ):
     """
@@ -132,7 +142,11 @@ async def login(
             detail="Usuario desactivado. Contacte al administrador."
         )
     
-    # 4. Actualizar último login
+    # 4. Migrate password from bcrypt to Argon2 if needed (transparent upgrade)
+    if needs_rehash(user.password_hash):
+        user.password_hash = hash_password(credentials.password)
+    
+    # 5. Actualizar último login
     user.last_login = datetime.now(timezone.utc)
     if hasattr(user, 'failed_login_attempts'):
         user.failed_login_attempts = 0
@@ -188,8 +202,10 @@ async def get_my_profile(
 # =============================================================================
 
 @router.put("/change-password", response_model=ChangePasswordResponse)
+@limiter.limit("10/minute")  # Rate limit: 10 password changes per minute per IP
 async def change_password(
-    request: ChangePasswordRequest,
+    request: Request,
+    password_data: ChangePasswordRequest,
     current_user: SysUsuario = Depends(get_current_active_user),
     db: Session = Depends(get_auth_db)
 ):
@@ -219,21 +235,21 @@ async def change_password(
     ```
     """
     # 1. Verificar que la contraseña actual es correcta
-    if not verify_password(request.current_password, current_user.password_hash):
+    if not verify_password(password_data.current_password, current_user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="La contraseña actual es incorrecta"
         )
     
     # 2. Verificar que la nueva contraseña sea diferente
-    if request.current_password == request.new_password:
+    if password_data.current_password == password_data.new_password:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="La nueva contraseña debe ser diferente a la actual"
         )
     
-    # 3. Actualizar la contraseña
-    current_user.password_hash = hash_password(request.new_password)
+    # 3. Actualizar la contraseña (usando Argon2)
+    current_user.password_hash = hash_password(password_data.new_password)
     db.commit()
     
     return ChangePasswordResponse(
