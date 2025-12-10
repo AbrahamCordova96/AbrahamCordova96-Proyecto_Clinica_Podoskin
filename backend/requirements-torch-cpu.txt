@@ -1,0 +1,11 @@
+# PyTorch CPU - Instalar ANTES que sentence-transformers
+# Comando completo de instalación:
+# pip install -r requirements-torch-cpu.txt
+
+# PyTorch CPU (sin CUDA) - Solo especificar torch
+# torchvision y torchaudio se instalan automáticamente
+torch==2.9.0 --index-url https://download.pytorch.org/whl/cpu
+
+# Si necesitas versiones específicas (opcional):
+# torchvision==0.19.0 --index-url https://download.pytorch.org/whl/cpu
+# torchaudio==2.5.0 --index-url https://download.pytorch.org/whl/cpu

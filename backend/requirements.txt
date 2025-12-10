@@ -1,0 +1,41 @@
+# =====================================================
+# COGNITA APP - Dependencias Python
+# Versiones verificadas y funcionando
+# =====================================================
+
+# ===== CORE FRAMEWORK =====
+fastapi==0.123.8
+uvicorn==0.38.0
+pydantic==2.12.5
+pydantic-settings==2.12.0
+python-dotenv==1.2.1
+python-multipart==0.0.9
+
+# ===== AUTENTICACIÓN =====
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+
+# ===== BASE DE DATOS =====
+sqlalchemy==2.0.44
+psycopg2-binary==2.9.11
+psycopg==3.3.1
+psycopg-binary==3.3.1
+psycopg-pool==3.3.0
+
+# ===== HTTP CLIENT =====
+httpx==0.28.1
+
+# ===== LANGCHAIN + LANGGRAPH =====
+langchain-core==1.1.1
+langchain-anthropic==1.2.0
+langgraph==1.0.4
+langgraph-checkpoint==3.0.1
+langgraph-checkpoint-postgres==3.0.1
+langgraph-prebuilt==1.0.5
+langgraph-sdk==0.2.12
+
+# ===== RAG SEMÁNTICO (CPU) =====
+# NOTA: Instalar torch CPU PRIMERO con: pip install -r requirements-torch-cpu.txt
+# chromadb==0.6.3
+# sentence-transformers==3.3.1

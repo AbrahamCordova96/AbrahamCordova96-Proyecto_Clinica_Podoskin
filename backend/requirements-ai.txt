@@ -1,0 +1,25 @@
+# Paquetes de IA - INSTALAR UNO POR UNO (SIN PyTorch)
+# IMPORTANTE: Instalar torch==2.9.0+cpu ANTES que sentence-transformers
+
+# 1. OpenAI (más estable)
+# openai>=1.30.0
+
+# 2. Anthropic
+anthropic>=0.40.0
+
+# 3. LangChain
+langchain>=0.2.0
+langchain-community>=0.0.30
+
+# 4. LangGraph
+langgraph>=0.2.0
+
+# 5. Embeddings (requiere PyTorch CPU PRIMERO)
+# NO incluir torch aquí - instalar manual: pip install torch==2.9.0 --index-url https://download.pytorch.org/whl/cpu
+sentence-transformers==2.3.1
+
+# 6. Base de datos vectorial (el más problemático)
+chromadb
+
+# NOTA: PyTorch CPU se instala por separado
+# Comando: pip install torch==2.9.0 torchvision==0.20.0 torchaudio==2.5.0 --index-url https://download.pytorch.org/whl/cpu

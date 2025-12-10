@@ -1,0 +1,95 @@
+# =============================================================================
+# Docker Compose para PodoSkin - Arquitectura 3 Bases de Datos
+# =============================================================================
+# ARQUITECTURA:
+#   - clinica_auth_db: Usuarios, auditoría (schema: auth)
+#   - clinica_core_db: Pacientes, tratamientos (schema: clinic)
+#   - clinica_ops_db:  Citas, pagos, gastos (schemas: ops, finance)
+#
+# USO:
+#   1. Levantar:     docker-compose up -d
+#   2. Ver logs:     docker-compose logs -f db
+#   3. Conectar:     docker exec -it podoskin-db psql -U podoskin -d clinica_core_db
+#   4. Detener:      docker-compose down
+#   5. Borrar todo:  docker-compose down -v
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # =========================================================================
+  # PostgreSQL - Motor de Base de Datos (3 BDs en un contenedor)
+  # =========================================================================
+  db:
+    image: postgres:17-alpine
+    container_name: podoskin-db
+    restart: unless-stopped
+    
+    environment:
+      # Credenciales principales
+      POSTGRES_USER: podoskin
+      POSTGRES_PASSWORD: podoskin123
+      POSTGRES_DB: postgres  # BD por defecto, usamos scripts para crear las 3
+      
+      # Timezone para México
+      TZ: America/Mexico_City
+    
+    ports:
+      - "5432:5432"
+    
+    volumes:
+      # Persistencia de datos (sobrevive reinicios)
+      - podoskin_data:/var/lib/postgresql/data
+      
+      # Scripts de inicialización (se ejecutan en orden alfabético)
+      # Solo se ejecutan la PRIMERA vez (cuando el volumen está vacío)
+      - ./data/sql/01_create_databases.sh:/docker-entrypoint-initdb.d/01_create_databases.sh:ro
+      - ./data/sql/02_init_auth_db.sql:/docker-entrypoint-initdb.d/02_init_auth_db.sql:ro
+      - ./data/sql/03_init_core_db.sql:/docker-entrypoint-initdb.d/03_init_core_db.sql:ro
+      - ./data/sql/04_init_ops_db.sql:/docker-entrypoint-initdb.d/04_init_ops_db.sql:ro
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U podoskin -d clinica_core_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s  # Dar tiempo para inicializar las 3 BDs
+
+  # =========================================================================
+  # pgAdmin - Interfaz Web (opcional, solo con --profile admin)
+  # =========================================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: podoskin-pgadmin
+    restart: unless-stopped
+    profiles:
+      - admin  # Solo se levanta con: docker-compose --profile admin up -d
+    
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@podoskin.dev
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    
+    ports:
+      - "5050:80"
+    
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  podoskin_data:
+    name: podoskin_postgres_data
+  pgadmin_data:
+    name: podoskin_pgadmin_data
+
+# =============================================================================
+# CONEXIONES PARA TU .env (FastAPI):
+# =============================================================================
+# AUTH_DB_URL=postgresql://podoskin:podoskin123@localhost:5432/clinica_auth_db
+# CORE_DB_URL=postgresql://podoskin:podoskin123@localhost:5432/clinica_core_db
+# OPS_DB_URL=postgresql://podoskin:podoskin123@localhost:5432/clinica_ops_db
+# =============================================================================
