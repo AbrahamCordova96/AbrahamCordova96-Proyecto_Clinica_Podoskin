@@ -6,37 +6,40 @@
 [![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0.44-red.svg)](https://www.sqlalchemy.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compatible-blue.svg)](https://www.docker.com/)
 
-API REST completa para gestión de clínica podológica con **95 endpoints**, autenticación JWT, RBAC, auditoría y arquitectura multi-base de datos.
+API REST completa para gestión de clínica podológica con **101 endpoints**, autenticación JWT, RBAC, auditoría, arquitectura multi-base de datos, y características de seguridad avanzadas.
 
 ---
 
 ## 📊 Estado del Proyecto
 
 ### Estadísticas Generales
-- **Endpoints Implementados:** 95 (100%)
-- **Endpoints Funcionales:** 89 (93.7%)
-- **Módulos Completos:** 14
+- **Endpoints Implementados:** 101 (100%)
+- **Endpoints Funcionales:** 95 (94%)
+- **Módulos Completos:** 16
 - **Bases de Datos:** 3 (PostgreSQL)
 - **Roles de Usuario:** 3 (Admin, Podologo, Recepcion)
-- **Líneas de Código:** ~15,000
+- **Líneas de Código:** ~17,000
+- **Características de Seguridad:** Argon2, Rate Limiting, MIME Validation
 
 ### Cobertura por Módulo
 | Módulo | Endpoints | Estado | Porcentaje |
 |--------|-----------|--------|------------|
-| 🔐 Auth | 3 | 2/3 | 66% |
+| 🔐 Auth | 3 | 3/3 | ✅ 100% |
 | 👥 Usuarios | 6 | 6/6 | ✅ 100% |
-| 🏥 Pacientes | 7 | 5/7 | 71% |
+| 🏥 Pacientes | 8 | 8/8 | ✅ 100% |
 | 📅 Citas | 8 | 8/8 | ✅ 100% |
-| 👨‍⚕️ Podólogos | 5 | 4/5 | 80% |
+| 👨‍⚕️ Podólogos | 5 | 5/5 | ✅ 100% |
 | 🛠️ Servicios | 5 | 5/5 | ✅ 100% |
 | 💊 Tratamientos | 6 | 6/6 | ✅ 100% |
-| 📈 Evoluciones | 5 | 4/5 | 80% |
+| 📈 Evoluciones | 5 | 5/5 | ✅ 100% |
 | 📸 Evidencias | 8 | 8/8 | ✅ 100% |
 | 📜 Historial | 20 | 20/20 | ✅ 100% |
 | 💰 Finanzas | 7 | 7/7 | ✅ 100% |
-| 👥 Prospectos | 5 | 4/5 | 80% |
+| 👥 Prospectos | 5 | 5/5 | ✅ 100% |
 | 🛡️ Auditoría | 3 | 3/3 | ✅ 100% |
 | 📝 Examples | 3 | 3/3 | ✅ 100% |
+| 📊 Estadísticas | 2 | 2/2 | ✅ 100% |
+| 📧 Notificaciones | 3 | 3/3 | ✅ 100% |
 
 ---
 
@@ -125,9 +128,12 @@ uvicorn backend.api.app:app --reload --host 0.0.0.0 --port 8000
 - **Backend:** FastAPI 0.123.8
 - **ORM:** SQLAlchemy 2.0.44
 - **Validación:** Pydantic v2
-- **Auth:** JWT (python-jose)
-- **Password:** bcrypt (via pgcrypto)
+- **Auth:** JWT (python-jose) + Argon2id
+- **Security:** Rate Limiting (slowapi), File Validation
+- **Password:** Argon2id (OWASP 2024)
 - **BD:** PostgreSQL 17 (3 databases)
+- **PDF:** ReportLab 4.2.5
+- **Email:** aiosmtplib + Jinja2
 - **Containerización:** Docker Compose
 
 ---
@@ -306,17 +312,20 @@ curl "http://localhost:8000/api/v1/audit/export?start_date=2025-12-01&end_date=2
 
 ## 🚧 Trabajo Futuro
 
-### Prioridad Alta
-- [ ] Migración de contraseñas a Argon2 (más seguro que bcrypt)
-- [ ] Paginación en endpoints GET (actualmente sin límite)
-- [ ] Rate limiting por IP/usuario
-- [ ] Validación de tipos MIME en upload de evidencias
+### ✅ Completado (Diciembre 2025)
+- [x] Migración de contraseñas a Argon2 (más seguro que bcrypt)
+- [x] Paginación en endpoints GET con metadata
+- [x] Rate limiting por IP/usuario (5/min login, 10/min password, 200/min global)
+- [x] Validación de tipos MIME en upload de evidencias (3 capas de seguridad)
+- [x] Endpoint de estadísticas agregadas (dashboard completo)
+- [x] Exportación de expedientes a PDF (con ReportLab)
+- [x] Recordatorios automáticos de citas (emails con HTML templates)
+- [x] Dashboard de métricas clínicas (incluido en estadísticas)
 
-### Prioridad Media
-- [ ] Endpoint de estadísticas agregadas
-- [ ] Exportación de expedientes a PDF
-- [ ] Recordatorios automáticos de citas (emails/SMS)
-- [ ] Dashboard de métricas clínicas
+### Prioridad Media (Próximas mejoras)
+- [ ] SMS notifications (Twilio/AWS SNS)
+- [ ] Caching layer con Redis
+- [ ] Two-Factor Authentication (2FA)
 
 ### Prioridad Baja
 - [ ] Integración con pasarelas de pago
