@@ -85,8 +85,8 @@ class ChangePasswordResponse(BaseModel):
 @router.post("/login", response_model=Token)
 @limiter.limit("5/minute")  # Rate limit: 5 login attempts per minute per IP
 async def login(
-    request: Request,
     credentials: LoginRequest,
+    request: Request,
     db: Session = Depends(get_auth_db)
 ):
     """
@@ -204,8 +204,8 @@ async def get_my_profile(
 @router.put("/change-password", response_model=ChangePasswordResponse)
 @limiter.limit("10/minute")  # Rate limit: 10 password changes per minute per IP
 async def change_password(
-    request: Request,
     password_data: ChangePasswordRequest,
+    request: Request,
     current_user: SysUsuario = Depends(get_current_active_user),
     db: Session = Depends(get_auth_db)
 ):

@@ -166,16 +166,25 @@ async def get_dashboard_statistics(
     
     patients_by_sex = {sex: count for sex, count in sex_stats}
     
-    # Average age
-    avg_age_result = core_db.query(
-        func.avg(extract('year', func.age(Paciente.fecha_nacimiento)))
-    ).filter(
+    # Average age - calculate using database-agnostic approach
+    # Get birth dates and calculate age in Python for better compatibility
+    patients_with_birth = core_db.query(Paciente.fecha_nacimiento).filter(
         Paciente.deleted_at.is_(None),
         clinic_filter_core,
         Paciente.fecha_nacimiento.isnot(None)
-    ).scalar()
+    ).all()
     
-    avg_age = float(avg_age_result) if avg_age_result else None
+    if patients_with_birth:
+        from datetime import date as date_type
+        today = date_type.today()
+        ages = []
+        for (birth_date,) in patients_with_birth:
+            if birth_date:
+                age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+                ages.append(age)
+        avg_age = sum(ages) / len(ages) if ages else None
+    else:
+        avg_age = None
     
     patient_stats = PatientStatistics(
         total_patients=total_patients,

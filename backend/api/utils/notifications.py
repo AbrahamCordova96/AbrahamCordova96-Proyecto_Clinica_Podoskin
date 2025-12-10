@@ -16,23 +16,12 @@ from datetime import datetime, date, time
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import aiosmtplib
+import logging
 from jinja2 import Template
 
 from backend.api.core.config import get_settings
 
-settings = get_settings()
-
-
-# =============================================================================
-# EMAIL CONFIGURATION
-# =============================================================================
-
-# Get SMTP configuration from settings
-SMTP_HOST = settings.SMTP_HOST
-SMTP_PORT = settings.SMTP_PORT
-SMTP_USER = settings.SMTP_USER
-SMTP_PASSWORD = settings.SMTP_PASSWORD
-FROM_EMAIL = settings.FROM_EMAIL
+logger = logging.getLogger(__name__)
 
 
 # =============================================================================
@@ -99,7 +88,7 @@ async def send_email(
     to_email: str,
     subject: str,
     html_content: str,
-    from_email: str = FROM_EMAIL
+    from_email: Optional[str] = None
 ) -> bool:
     """
     Send an email using SMTP.
@@ -108,7 +97,7 @@ async def send_email(
         to_email: Recipient email address
         subject: Email subject
         html_content: HTML content of the email
-        from_email: Sender email address
+        from_email: Sender email address (uses config default if not provided)
         
     Returns:
         True if email sent successfully, False otherwise
@@ -120,9 +109,14 @@ async def send_email(
         - SMTP_USER
         - SMTP_PASSWORD
     """
-    if not SMTP_USER or not SMTP_PASSWORD:
-        print("Warning: SMTP credentials not configured. Email not sent.")
+    settings = get_settings()
+    
+    if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
+        logger.warning("SMTP credentials not configured. Email not sent.")
         return False
+    
+    if from_email is None:
+        from_email = settings.FROM_EMAIL
     
     try:
         # Create message
@@ -138,17 +132,18 @@ async def send_email(
         # Send email
         await aiosmtplib.send(
             message,
-            hostname=SMTP_HOST,
-            port=SMTP_PORT,
-            username=SMTP_USER,
-            password=SMTP_PASSWORD,
+            hostname=settings.SMTP_HOST,
+            port=settings.SMTP_PORT,
+            username=settings.SMTP_USER,
+            password=settings.SMTP_PASSWORD,
             start_tls=True
         )
         
+        logger.info(f"Email sent successfully to {to_email}")
         return True
         
     except Exception as e:
-        print(f"Error sending email: {e}")
+        logger.error(f"Error sending email to {to_email}: {e}")
         return False
 
 
@@ -236,7 +231,7 @@ async def send_sms(
         - etc.
     """
     # TODO: Implement SMS sending with chosen provider
-    print(f"SMS placeholder: Would send to {phone_number}: {message}")
+    logger.info(f"SMS placeholder: Would send to {phone_number}: {message}")
     return False
 
 

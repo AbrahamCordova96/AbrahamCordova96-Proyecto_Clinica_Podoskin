@@ -410,22 +410,17 @@ async def upload_evidencia(
     
     # Validar magic numbers (primeros bytes del archivo) para verificar tipo real
     # Esto previene ataques de extensión falsa
-    magic_numbers = {
-        b'\xff\xd8\xff': 'image/jpeg',  # JPEG
-        b'\x89PNG\r\n\x1a\n': 'image/png',  # PNG
-        b'RIFF': 'image/webp',  # WebP (necesita verificar WEBP después de RIFF)
-    }
-    
     file_type_valid = False
-    for magic, mime in magic_numbers.items():
-        if content.startswith(magic):
-            # Para WebP, verificar adicional
-            if mime == 'image/webp' and content[8:12] == b'WEBP':
-                file_type_valid = True
-                break
-            elif mime != 'image/webp':
-                file_type_valid = True
-                break
+    
+    # Check JPEG (starts with FFD8FF followed by marker)
+    if content.startswith(b'\xff\xd8\xff'):
+        file_type_valid = True
+    # Check PNG (starts with PNG signature)
+    elif content.startswith(b'\x89PNG\r\n\x1a\n'):
+        file_type_valid = True
+    # Check WebP (starts with RIFF....WEBP)
+    elif content.startswith(b'RIFF') and len(content) >= 12 and content[8:12] == b'WEBP':
+        file_type_valid = True
     
     if not file_type_valid:
         raise HTTPException(

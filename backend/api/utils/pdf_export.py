@@ -16,7 +16,8 @@ Uses ReportLab to generate professional PDF documents with:
 from datetime import datetime
 from io import BytesIO
 from typing import List, Optional
-from reportlab.lib.pagesizes import letter, A4
+import logging
+from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
@@ -24,6 +25,8 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib import colors
 
 from backend.schemas.core.models import Paciente, Tratamiento, EvolucionClinica
+
+logger = logging.getLogger(__name__)
 
 
 def generate_patient_pdf(
@@ -94,7 +97,7 @@ def generate_patient_pdf(
     patient_data = [
         ['ID Paciente:', str(paciente.id_paciente)],
         ['Nombre completo:', f"{paciente.nombres} {paciente.apellidos}"],
-        ['Fecha de nacimiento:', paciente.fecha_nacimiento.strftime('%d/%m/%Y') if paciente.fecha_nacimiento else 'N/A'],
+        ['Fecha de nacimiento:', _format_date(paciente.fecha_nacimiento)],
         ['Edad:', str(_calculate_age(paciente.fecha_nacimiento)) if paciente.fecha_nacimiento else 'N/A'],
         ['Sexo:', paciente.sexo or 'N/A'],
         ['Teléfono:', paciente.telefono or 'N/A'],
@@ -188,9 +191,27 @@ def generate_patient_pdf(
     return BytesIO(pdf)
 
 
+def _format_date(date_obj) -> str:
+    """Format date object to string, handling None and various types"""
+    if not date_obj:
+        return 'N/A'
+    try:
+        if hasattr(date_obj, 'strftime'):
+            return date_obj.strftime('%d/%m/%Y')
+        return str(date_obj)
+    except:
+        return 'N/A'
+
+
 def _calculate_age(birth_date) -> int:
     """Calculate age from birth date"""
     if not birth_date:
         return 0
-    today = datetime.now().date()
-    return today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+    try:
+        today = datetime.now().date()
+        # Handle both date and datetime objects
+        if hasattr(birth_date, 'date'):
+            birth_date = birth_date.date()
+        return today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+    except:
+        return 0
