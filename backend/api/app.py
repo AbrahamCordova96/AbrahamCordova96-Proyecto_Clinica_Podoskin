@@ -42,6 +42,7 @@ from backend.api.routes import finance
 from backend.api.routes import historial_detalles
 from backend.api.routes import chat
 from backend.api.routes import statistics
+from backend.api.routes import notifications
 
 
 # =============================================================================
@@ -164,6 +165,8 @@ app.include_router(historial_detalles.router, prefix="/api/v1")
 app.include_router(chat.router, prefix="/api/v1")
 # Statistics - Aggregated dashboard and metrics
 app.include_router(statistics.router, prefix="/api/v1")
+# Notifications - Email/SMS reminders
+app.include_router(notifications.router, prefix="/api/v1")
 
 
 # =============================================================================

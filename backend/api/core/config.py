@@ -87,6 +87,14 @@ class Settings(BaseSettings):
     AGENT_LOG_QUERIES: bool = True       # Loguear queries SQL generadas
     AGENT_LOG_RESPONSES: bool = False    # Loguear respuestas (cuidado con PII)
     
+    # ========== Email Notifications ==========
+    # SMTP configuration for sending email notifications
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""  # Email address to send from (configure in .env)
+    SMTP_PASSWORD: str = ""  # Email password or app-specific password (configure in .env)
+    FROM_EMAIL: str = "noreply@podoskin.com"
+    
     class Config:
         # Archivo .env - ruta absoluta calculada arriba
         env_file = str(_ENV_FILE)

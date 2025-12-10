@@ -22,6 +22,11 @@ slowapi==0.1.9
 # ===== PDF GENERATION =====
 reportlab==4.2.5
 
+# ===== EMAIL NOTIFICATIONS =====
+python-multipart==0.0.9  # Already included above
+aiosmtplib==3.0.2
+jinja2==3.1.4
+
 
 # ===== BASE DE DATOS =====
 sqlalchemy==2.0.44
