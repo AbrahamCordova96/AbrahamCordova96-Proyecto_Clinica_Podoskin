@@ -10,6 +10,28 @@ API REST completa para gestión de clínica podológica con **101 endpoints**, a
 
 ---
 
+## ✨ Novedades - Diciembre 2025
+
+### Características Implementadas Recientemente
+
+🔒 **Seguridad Reforzada**
+- ✅ Migración completa a **Argon2id** (OWASP 2024) con migración automática desde bcrypt
+- ✅ **Rate limiting** inteligente: 5/min login, 10/min password, 200/min global
+- ✅ Validación **MIME de 3 capas** en uploads (Content-Type + Magic Numbers + Size)
+
+📊 **Analytics y Reportes**
+- ✅ **Dashboard de estadísticas** agregadas con métricas clínicas completas
+- ✅ **Exportación a PDF** de expedientes con ReportLab profesional
+- ✅ **Paginación avanzada** en todos los endpoints GET con metadata
+
+📧 **Automatización**
+- ✅ **Recordatorios automáticos** de citas vía email con templates HTML
+- ✅ Sistema de notificaciones con aiosmtplib asíncrono
+
+Ver detalles completos en la sección [Trabajo Futuro](#-trabajo-futuro).
+
+---
+
 ## 📊 Estado del Proyecto
 
 ### Estadísticas Generales
@@ -313,19 +335,85 @@ curl "http://localhost:8000/api/v1/audit/export?start_date=2025-12-01&end_date=2
 ## 🚧 Trabajo Futuro
 
 ### ✅ Completado (Diciembre 2025)
-- [x] Migración de contraseñas a Argon2 (más seguro que bcrypt)
-- [x] Paginación en endpoints GET con metadata
-- [x] Rate limiting por IP/usuario (5/min login, 10/min password, 200/min global)
-- [x] Validación de tipos MIME en upload de evidencias (3 capas de seguridad)
-- [x] Endpoint de estadísticas agregadas (dashboard completo)
-- [x] Exportación de expedientes a PDF (con ReportLab)
-- [x] Recordatorios automáticos de citas (emails con HTML templates)
-- [x] Dashboard de métricas clínicas (incluido en estadísticas)
 
-### Prioridad Media (Próximas mejoras)
-- [ ] SMS notifications (Twilio/AWS SNS)
-- [ ] Caching layer con Redis
-- [ ] Two-Factor Authentication (2FA)
+Todas las siguientes características han sido implementadas y verificadas:
+
+#### 🔐 Seguridad Avanzada
+- **[x] Migración de contraseñas a Argon2id**
+  - Implementación con parámetros OWASP 2024 recomendados
+  - Migración automática desde bcrypt al iniciar sesión
+  - Configuración: 64MB memoria, 3 iteraciones, 4 threads paralelos
+  - Archivo: `backend/schemas/auth/auth_utils.py`
+
+- **[x] Rate limiting por IP/usuario**
+  - Login: 5 intentos/minuto por IP
+  - Cambio de contraseña: 10 intentos/minuto por IP
+  - Endpoints generales: 200 requests/minuto por IP
+  - Implementado con SlowAPI en todos los endpoints críticos
+  - Archivos: `backend/api/app.py`, `backend/api/routes/auth.py`
+
+- **[x] Validación de tipos MIME en upload (3 capas)**
+  - Capa 1: Validación de Content-Type header (image/jpeg, image/png, image/webp)
+  - Capa 2: Verificación de magic numbers (firmas de archivo binarias)
+  - Capa 3: Límite de tamaño de archivo (10MB máximo)
+  - Archivo: `backend/api/routes/evidencias.py` (líneas 392-429)
+
+#### 📊 Funcionalidades de Negocio
+- **[x] Paginación en endpoints GET con metadata**
+  - Parámetros `skip` y `limit` en todos los endpoints de listado
+  - Respuestas incluyen total de registros para UI
+  - Límites configurables (por defecto: 50 registros, máximo: 100)
+  - Ejemplos: `/pacientes`, `/citas`, `/tratamientos`
+
+- **[x] Endpoint de estadísticas agregadas**
+  - Dashboard completo con métricas de negocio
+  - Estadísticas de pacientes (total, nuevos, demografía)
+  - Estadísticas de citas (por estado, por mes)
+  - Estadísticas financieras (ingresos, gastos)
+  - Métricas de podólogos (rendimiento individual)
+  - Archivo: `backend/api/routes/statistics.py`
+
+- **[x] Dashboard de métricas clínicas**
+  - Estadísticas de tratamientos (activos, completados, por tipo)
+  - Integrado en el endpoint `/statistics/dashboard`
+  - Visualización de evoluciones por tratamiento
+
+#### 📄 Reportes y Notificaciones
+- **[x] Exportación de expedientes a PDF**
+  - Generación profesional con ReportLab 4.2.5
+  - Incluye información completa del paciente
+  - Historial de tratamientos y evoluciones
+  - Formato: carta (letter), estilos personalizados
+  - Archivo: `backend/api/utils/pdf_export.py`
+
+- **[x] Recordatorios automáticos de citas**
+  - Envío de emails con templates HTML personalizados
+  - Integración con aiosmtplib (async)
+  - Templates renderizados con Jinja2
+  - Endpoints para envío individual y masivo
+  - Prevención de recordatorios duplicados
+  - Archivo: `backend/api/routes/notifications.py`
+
+---
+
+### 📋 Prioridad Media (Próximas mejoras)
+
+Funcionalidades planificadas para Q1 2026:
+
+- **[ ] Notificaciones SMS**
+  - Integración con Twilio o AWS SNS
+  - Recordatorios de citas por mensaje de texto
+  - Confirmación automática de citas
+
+- **[ ] Caching layer con Redis**
+  - Cache de estadísticas y dashboards
+  - Mejora de performance en queries pesadas
+  - TTL configurable por tipo de dato
+
+- **[ ] Autenticación de dos factores (2FA)**
+  - TOTP (Time-based One-Time Password)
+  - Códigos de recuperación de respaldo
+  - Obligatorio para usuarios Admin
 
 ### Prioridad Baja
 - [ ] Integración con pasarelas de pago
@@ -382,6 +470,6 @@ Este proyecto es propiedad privada de la Clínica PodoSkin.
 
 ---
 
-**Última actualización:** 9 de Diciembre, 2025  
+**Última actualización:** 10 de Diciembre, 2025  
 **Versión API:** v1.0  
 **Estado:** ✅ Producción (93.7% operativo)
