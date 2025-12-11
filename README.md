@@ -12,7 +12,24 @@ API REST completa para gestión de clínica podológica con **101 endpoints**, a
 
 ## ✨ Novedades - Diciembre 2025
 
-### Características Implementadas Recientemente
+### 🆕 Implementado Esta Semana (11-12 Diciembre)
+
+🧪 **Infraestructura Completa de Testing**
+- ✅ **Suite pytest con 120+ tests** automatizados (auth, pacientes, citas)
+- ✅ **Scripts de gestión de datos**: seed_test_data.py y clean_database.py
+- ✅ **Factories** para generación de datos fake realistas en español
+- ✅ **84 funciones de test** con fixtures globales y locales
+- ✅ **Cobertura de código** ~85-90% en módulos principales
+
+🤖 **Chatbot de Terminal con IA**
+- ✅ **Interfaz CLI** para consultas en lenguaje natural
+- ✅ **Integración con Claude 3.5** (Anthropic) + LangGraph
+- ✅ **NL-to-SQL**: Traduce preguntas a consultas SQL automáticamente
+- ✅ **Análisis matemático**: Calcula porcentajes, totales, promedios
+- ✅ **Fuzzy search**: Búsqueda inteligente de nombres y términos
+- ✅ **Multi-DB queries**: Consulta en 3 bases de datos simultáneamente
+
+### Características Implementadas Anteriormente
 
 🔒 **Seguridad Reforzada**
 - ✅ Migración completa a **Argon2id** (OWASP 2024) con migración automática desde bcrypt
@@ -175,11 +192,27 @@ Project-Medical/
 │   │   │   ├── auth.py         # Auth dependencies
 │   │   │   ├── database.py     # DB sessions (3)
 │   │   │   └── permissions.py  # RBAC
-│   │   └── routes/             # 14 routers
+│   │   ├── routes/             # 16 routers
+│   │   ├── utils/              # Utilidades (PDF, email, etc.)
+│   │   └── middleware/         # Audit middleware
 │   ├── schemas/
 │   │   ├── auth/models.py      # ORM auth
 │   │   ├── core/models.py      # ORM clinic
 │   │   └── ops/models.py       # ORM ops
+│   ├── tests/                  # ⭐ NUEVO: Suite de testing
+│   │   ├── conftest.py         # Fixtures globales
+│   │   ├── unit/               # Tests unitarios
+│   │   ├── factories/          # Generadores de datos fake
+│   │   ├── scripts/            # seed_test_data.py, clean_database.py
+│   │   ├── README.md           # Guía completa de testing
+│   │   └── QUICKSTART.md       # Quick start (5 min)
+│   ├── tools/                  # ⭐ NUEVO: Herramientas IA
+│   │   ├── terminal_chatbot.py # Chatbot CLI con NL queries
+│   │   ├── sql_executor.py     # NL-to-SQL converter
+│   │   ├── mathematical_analyzer.py
+│   │   └── fuzzy_search.py     # Búsqueda inteligente
+│   ├── agents/                 # LangGraph workflow
+│   ├── integration/            # Endpoints de integración
 │   └── config/
 │       └── logging_config.py   # Custom logging
 ├── data/sql/                   # Scripts SQL iniciales
@@ -188,16 +221,18 @@ Project-Medical/
 │   ├── Planeamiento/
 │   ├── Informes/
 │   └── Lecciones_Aprendidas.md
-├── tests/                      # Tests automatizados
 ├── docker-compose.yml
 ├── start_api.ps1              # Script inicio
-└── test_all_95_endpoints.ps1  # Test completo
+└── test_all_95_endpoints.ps1  # Test completo (legacy)
 ```
 
 ### Documentos Clave
 - **[Arquitectura de BD](Docs/Desarrollo/PodoSkin_Desarrollo_BD_v4.md)** - Diseño de 3 bases de datos
 - **[Matriz de Permisos](Docs/Planeamiento/API_Permisos_Endpoints.md)** - RBAC por endpoint
 - **[Lecciones Aprendidas](Docs/Lecciones_Aprendidas.md)** - Errores y soluciones
+- **[Testing Guide](backend/tests/README.md)** - Suite completa de testing con pytest
+- **[Quick Start Testing](backend/tests/QUICKSTART.md)** - Guía rápida de testing (5 min)
+- **[Terminal Chatbot](backend/tools/terminal_chatbot.py)** - Chatbot IA con consultas NL
 
 ---
 
@@ -239,9 +274,85 @@ Headers: Authorization: Bearer eyJhbGc...
 
 ## 🧪 Testing
 
-### Test Automatizado de 95 Endpoints
+### Suite Completa de Testing con pytest
+
+El proyecto incluye una infraestructura de testing profesional con **120+ tests** automatizados.
+
+#### Instalación y Setup
+```bash
+# 1. Instalar dependencias de testing
+cd backend
+pip install -r requirements-test.txt
+
+# 2. Generar datos de prueba
+python tests/scripts/seed_test_data.py --count 50 --clean
+
+# 3. Ejecutar todos los tests
+pytest -v
+```
+
+#### Cobertura Actual
+| Módulo | Tests | Estado |
+|--------|-------|--------|
+| 🔐 Auth | 25 tests | ✅ ~90% cobertura |
+| 👥 Pacientes | 45+ tests | ✅ ~85% cobertura |
+| 📅 Citas | 50+ tests | ✅ ~85% cobertura |
+
+**Total**: 120+ tests implementados, 84 funciones de test
+
+#### Scripts de Utilidad
+
+**Generación de Datos de Prueba**
+```bash
+# Generar 100 registros de prueba con limpieza
+python tests/scripts/seed_test_data.py --count 100 --clean
+```
+
+Genera automáticamente:
+- ✅ Usuarios (admin, podólogos, recepcionistas)
+- ✅ 50-100 Pacientes con datos realistas en español
+- ✅ Tratamientos, evoluciones y evidencias
+- ✅ Citas distribuidas en ±3 meses
+- ✅ Transacciones financieras y gastos
+
+**Credenciales de prueba generadas:**
+- Admin: `admin` / `admin123`
+- Podólogo: `podologo1` / `podo123`
+- Recepción: `recepcion1` / `recep123`
+
+**Limpieza de Base de Datos**
+```bash
+# ⚠️ Borra TODOS los datos (solo desarrollo/testing)
+python tests/scripts/clean_database.py --confirm --reset
+```
+
+#### Comandos de Testing
+
+```bash
+# Tests específicos por módulo
+pytest tests/unit/test_auth_endpoints.py -v
+pytest tests/unit/test_pacientes_endpoints.py -v
+pytest tests/unit/test_citas_endpoints.py -v
+
+# Por marcador
+pytest -m auth              # Solo autenticación
+pytest -m api               # Solo API
+pytest -m integration       # Solo integración
+
+# Con cobertura de código
+pytest --cov=backend/api --cov-report=html
+# Ver reporte: open backend/tests/coverage_html/index.html
+
+# En paralelo (más rápido)
+pip install pytest-xdist
+pytest -n 4
+```
+
+Ver documentación completa: **[Testing Guide](backend/tests/README.md)**
+
+### Test Automatizado de 95 Endpoints (PowerShell)
 ```powershell
-# Ejecutar test completo
+# Script legacy para validación rápida
 .\test_all_95_endpoints.ps1
 
 # Resultado esperado: 89/95 OK (93.7%)
@@ -255,6 +366,89 @@ Los siguientes 6 endpoints fallan intencionalmente por validaciones de negocio:
 4. `/podologos` POST - Schema validation
 5. `/evoluciones` POST - FK constraint validation
 6. `/prospectos/1/convertir` - Business logic (ya convertido)
+
+---
+
+## 🤖 Chatbot de Terminal con IA
+
+### Interfaz CLI para Consultas en Lenguaje Natural
+
+El sistema incluye un chatbot de terminal que permite interactuar con la API mediante **consultas en lenguaje natural** usando IA (Anthropic Claude + LangGraph).
+
+#### Instalación
+```bash
+cd backend
+
+# 1. Instalar dependencias (opcional, para mejor UX)
+pip install rich
+
+# 2. Configurar API key en .env
+echo "ANTHROPIC_API_KEY=tu-api-key-aqui" >> .env
+echo "CLAUDE_MODEL=claude-3-5-haiku-20241022" >> .env
+
+# 3. Iniciar chatbot
+python tools/terminal_chatbot.py
+```
+
+#### Comandos Especiales
+Dentro del chatbot:
+- `/help` - Mostrar ayuda completa
+- `/ejemplos` - Ver ejemplos de consultas
+- `/stats` - Estadísticas del sistema
+- `/history` - Ver historial de conversación
+- `/clear` - Limpiar pantalla
+- `/exit` o `/quit` - Salir
+
+#### Ejemplos de Consultas
+
+**📊 Análisis de Pacientes**
+```
+¿Cuántas personas con sobrepeso tuvimos la semana pasada?
+Dame la lista de pacientes mayores de 60 años
+Muéstrame la distribución de pacientes por sexo
+¿Cuántos pacientes nuevos hubo este mes?
+```
+
+**💰 Análisis Financiero con Cálculos**
+```
+¿Cuánto es el 20% de las ganancias después de gastos la semana pasada?
+Dame un resumen de ingresos vs gastos del mes
+Calcula el margen de ganancia del último trimestre
+¿Cuál fue el ingreso total de noviembre?
+```
+
+**📅 Gestión de Citas y Horarios**
+```
+¿Qué pacientes tienen citas mañana?
+Muéstrame el horario completo de esta semana
+¿Cuál es el horario del Dr. Martínez esta semana?
+¿Hay espacios disponibles el viernes?
+¿Cuál es la tasa de no-asistencia este mes?
+```
+
+**💊 Tratamientos y Seguimiento**
+```
+¿Cuántos tratamientos activos tenemos?
+Muéstrame pacientes con tratamiento de onicomicosis
+¿Qué tratamientos se completaron este mes?
+Dame estadísticas de los problemas más comunes
+```
+
+#### Modo de Consulta Única
+```bash
+# Para scripts o integraciones
+python tools/terminal_chatbot.py --single "¿Cuántos pacientes tenemos hoy?"
+```
+
+#### Características Técnicas
+- **NL-to-SQL**: Traduce lenguaje natural a consultas SQL
+- **Multi-DB**: Consulta en las 3 bases de datos simultáneamente
+- **Matemáticas**: Realiza cálculos complejos sobre los datos
+- **Context-Aware**: Mantiene contexto de conversación
+- **Fuzzy Search**: Búsqueda inteligente de nombres
+- **Audit Trail**: Todas las consultas quedan registradas
+
+Ver documentación completa: **[Terminal Chatbot Guide](backend/tools/terminal_chatbot.py)**
 
 ---
 
@@ -470,6 +664,8 @@ Este proyecto es propiedad privada de la Clínica PodoSkin.
 
 ---
 
-**Última actualización:** 10 de Diciembre, 2025  
+**Última actualización:** 11 de Diciembre, 2025  
 **Versión API:** v1.0  
-**Estado:** ✅ Producción (93.7% operativo)
+**Estado:** ✅ Producción (93.7% operativo)  
+**Testing:** ✅ 120+ tests automatizados  
+**Chatbot IA:** ✅ Terminal CLI disponible

@@ -6,7 +6,9 @@
 - **Backend**: FastAPI (Python) + SQLAlchemy ORM
 - **BD**: 3 bases de datos PostgreSQL independientes en un contenedor Docker
 - **Auth**: JWT tokens + RBAC (3 roles: Admin, Podologo, Recepcion)
-- **API**: 58+ endpoints organizados en 11 módulos
+- **API**: 101+ endpoints organizados en 16 módulos
+- **Testing**: Suite pytest con 120+ tests automatizados
+- **IA Tools**: Chatbot terminal con NL-to-SQL, análisis matemático, fuzzy search
 
 ### Modelo de Datos (3 Bases Separadas)
 
@@ -277,7 +279,148 @@ APP_NAME="PodoSkin API"
 
 ---
 
-**Última actualización**: 8 de diciembre de 2025
+**Última actualización**: 11 de diciembre de 2025
+
+## Testing y Herramientas de Desarrollo
+
+### Suite de Testing con pytest
+
+El proyecto incluye una infraestructura completa de testing:
+
+**Ubicación**: `backend/tests/`
+
+**Cobertura actual**:
+- 120+ tests implementados
+- 84 funciones de test
+- ~85-90% cobertura en módulos principales (auth, pacientes, citas)
+
+**Archivos clave**:
+- `conftest.py` - Fixtures globales (sessions de BD, usuarios de prueba, auth headers)
+- `unit/test_auth_endpoints.py` - 25 tests de autenticación
+- `unit/test_pacientes_endpoints.py` - 45+ tests de pacientes
+- `unit/test_citas_endpoints.py` - 50+ tests de citas
+- `factories/__init__.py` - Generadores de datos fake con Faker
+- `scripts/seed_test_data.py` - Generador de datos de prueba (563 líneas)
+- `scripts/clean_database.py` - Limpieza de BD de prueba (343 líneas)
+
+**Ejecutar tests**:
+```bash
+cd backend
+pytest -v                              # Todos los tests
+pytest tests/unit/test_auth_endpoints.py -v  # Módulo específico
+pytest -m auth                         # Por marcador
+pytest --cov=backend/api --cov-report=html  # Con cobertura
+```
+
+**Generar datos de prueba**:
+```bash
+python tests/scripts/seed_test_data.py --count 100 --clean
+```
+
+Genera automáticamente:
+- Usuarios (admin, podólogos, recepcionistas)
+- 50-100 pacientes con datos realistas en español
+- Tratamientos, evoluciones, evidencias
+- Citas distribuidas en ±3 meses
+- Transacciones financieras
+
+**Credenciales de prueba**:
+- Admin: `admin` / `admin123`
+- Podólogo: `podologo1` / `podo123`
+- Recepción: `recepcion1` / `recep123`
+
+### Chatbot de Terminal con IA
+
+**Ubicación**: `backend/tools/terminal_chatbot.py` (514 líneas)
+
+Un asistente inteligente que permite consultas en lenguaje natural sobre la base de datos.
+
+**Tecnología**:
+- Anthropic Claude 3.5 Haiku
+- LangGraph workflow
+- NL-to-SQL converter
+- Mathematical analyzer
+- Fuzzy search
+
+**Configuración**:
+```bash
+# En backend/.env
+ANTHROPIC_API_KEY=tu-api-key-aqui
+CLAUDE_MODEL=claude-3-5-haiku-20241022
+CLAUDE_TEMPERATURE=0.1
+```
+
+**Uso**:
+```bash
+cd backend
+python tools/terminal_chatbot.py              # Modo interactivo
+python tools/terminal_chatbot.py --single "query"  # Consulta única
+```
+
+**Comandos especiales**:
+- `/help` - Ayuda
+- `/ejemplos` - Ver ejemplos
+- `/stats` - Estadísticas del sistema
+- `/history` - Historial de conversación
+- `/exit` - Salir
+
+**Ejemplos de consultas**:
+```
+¿Cuántos pacientes con sobrepeso tuvimos la semana pasada?
+¿Cuánto es el 20% de las ganancias después de gastos la semana pasada?
+¿Qué pacientes tienen citas mañana?
+¿Cuál es el horario del Dr. Martínez esta semana?
+```
+
+**Herramientas de soporte**:
+- `tools/sql_executor.py` - NL-to-SQL conversion
+- `tools/mathematical_analyzer.py` - Cálculos matemáticos sobre datos
+- `tools/fuzzy_search.py` - Búsqueda inteligente tolerante a errores
+- `tools/schema_info.py` - Información de esquemas de BD
+- `tools/appointment_manager.py` - Gestión inteligente de citas
+
+### Documentación de Testing
+
+- **Guía completa**: `backend/tests/README.md` (587 líneas)
+- **Quick start**: `backend/tests/QUICKSTART.md` (182 líneas)
+- **Informe para cliente**: `Docs/Informes/Testing_y_Herramientas_IA.md`
+
+### Convenciones de Testing
+
+**Marcadores pytest**:
+```python
+@pytest.mark.auth        # Tests de autenticación
+@pytest.mark.api         # Tests de endpoints API
+@pytest.mark.database    # Tests que usan BD
+@pytest.mark.integration # Tests de integración
+@pytest.mark.security    # Tests de seguridad
+@pytest.mark.rbac        # Tests de permisos
+```
+
+**Fixtures disponibles** (definidos en `conftest.py`):
+- `client` - TestClient de FastAPI
+- `auth_db`, `core_db`, `ops_db` - Sesiones de BD de prueba
+- `test_admin_user`, `test_podologo_user`, `test_recepcion_user` - Usuarios
+- `admin_token`, `podologo_token`, `recepcion_token` - JWT tokens
+- `auth_headers_admin`, `auth_headers_podologo`, `auth_headers_recepcion` - Headers HTTP
+- `test_paciente`, `test_podologo` - Datos de prueba
+
+**Patrón de test**:
+```python
+@pytest.mark.api
+@pytest.mark.database
+class TestPacientesListar:
+    """Tests de listado de pacientes."""
+    
+    def test_list_success_admin(self, client, auth_headers_admin):
+        """Test: Admin puede listar pacientes."""
+        response = client.get("/api/v1/pacientes", headers=auth_headers_admin)
+        assert response.status_code == 200
+```
+
+---
+
+**Última actualización**: 11 de diciembre de 2025
 
 ## Pydantic (schemas) — Guía práctica y ejemplos
 
