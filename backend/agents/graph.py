@@ -160,9 +160,25 @@ def build_agent_graph() -> StateGraph:  # type: ignore
     """
     Construye el grafo del agente usando LangGraph.
     
+    NUEVO (Fase 2): Soporta dos modos:
+    - Subgraph architecture (recomendado): Routing por origen a subgrafos especializados
+    - Monolithic (legacy): Grafo único tradicional
+    
     Returns:
         StateGraph compilado listo para invocar
     """
+    from backend.api.core.config import get_settings
+    settings = get_settings()
+    
+    # ✅ NUEVO - Fase 2: Usar arquitectura de subgrafos si está habilitada
+    if settings.ENABLE_SUBGRAPH_ARCHITECTURE:
+        logger.info("🔧 Construyendo grafo con arquitectura de subgrafos (Fase 2)")
+        from backend.agents.root_graph import build_root_graph
+        return build_root_graph()
+    
+    # Legacy: Grafo monolítico original
+    logger.info("🔧 Construyendo grafo monolítico (legacy)")
+    
     # Crear grafo con el tipo de estado
     workflow = StateGraph(AgentState)  # type: ignore
     
