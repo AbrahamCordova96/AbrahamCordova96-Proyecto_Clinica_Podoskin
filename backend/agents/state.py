@@ -152,13 +152,23 @@ class AgentState(TypedDict, total=False):
     
     Todos los campos son opcionales (total=False) para permitir
     actualizaciones parciales en cada nodo.
+    
+    NUEVO (Fase 1 - Memoria Episódica):
+    - thread_id: Identificador único para checkpointing
+    - messages: Lista de mensajes para contexto multi-turno
+    - origin: Origen de la conversación (webapp, whatsapp_paciente, whatsapp_user)
     """
     
     # --- Input del usuario ---
     user_query: str                      # Consulta en lenguaje natural
     user_id: int                         # ID del usuario autenticado
     user_role: str                       # Rol: Admin, Podologo, Recepcion
-    session_id: str                      # ID de sesión para logging
+    session_id: str                      # ID de sesión para logging (legacy)
+    
+    # --- Threading y Persistencia (NUEVO - Fase 1) ---
+    thread_id: str                       # ID único para checkpointing
+    origin: str                          # Origen: 'webapp', 'whatsapp_paciente', 'whatsapp_user'
+    messages: List[Dict[str, str]]       # Historial: [{"role": "user", "content": "..."}]
     
     # --- Clasificación de intención ---
     intent: IntentType                   # Tipo de intención detectada
@@ -205,7 +215,9 @@ def create_initial_state(
     user_query: str,
     user_id: int,
     user_role: str,
-    session_id: str
+    session_id: str,
+    thread_id: Optional[str] = None,
+    origin: str = "webapp"
 ) -> AgentState:
     """
     Crea el estado inicial para una nueva consulta.
@@ -214,7 +226,9 @@ def create_initial_state(
         user_query: Consulta del usuario en lenguaje natural
         user_id: ID del usuario autenticado
         user_role: Rol del usuario (Admin, Podologo, Recepcion)
-        session_id: ID único de la sesión
+        session_id: ID único de la sesión (legacy, usar thread_id)
+        thread_id: ID único para checkpointing (NUEVO - Fase 1)
+        origin: Origen de la conversación: 'webapp', 'whatsapp_paciente', 'whatsapp_user'
         
     Returns:
         AgentState inicializado con valores por defecto
@@ -225,6 +239,11 @@ def create_initial_state(
         user_id=user_id,
         user_role=user_role,
         session_id=session_id,
+        
+        # Threading (NUEVO - Fase 1)
+        thread_id=thread_id or session_id,
+        origin=origin,
+        messages=[{"role": "user", "content": user_query}],
         
         # Defaults
         intent=IntentType.CLARIFICATION,

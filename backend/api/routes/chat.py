@@ -28,13 +28,15 @@ router = APIRouter(prefix="/chat", tags=["Chat - Agente IA"])
 class ChatRequest(BaseModel):
     """Request para enviar mensaje al agente."""
     message: str = Field(..., min_length=1, max_length=1000, description="Consulta en lenguaje natural")
-    session_id: Optional[str] = Field(None, description="ID de sesión para continuidad")
+    session_id: Optional[str] = Field(None, description="ID de sesión para continuidad (legacy)")
+    thread_id: Optional[str] = Field(None, description="ID de hilo para checkpointing (NUEVO - Fase 1)")
     
     class Config:
         json_schema_extra = {
             "example": {
                 "message": "Muéstrame las citas de hoy",
-                "session_id": "abc-123"
+                "session_id": "abc-123",
+                "thread_id": "5_webapp_abc-123"
             }
         }
 
@@ -45,7 +47,8 @@ class ChatResponse(BaseModel):
     message: str = Field(..., description="Respuesta formateada para el usuario")
     data: Optional[dict] = Field(None, description="Datos estructurados (para UI)")
     intent: Optional[str] = Field(None, description="Intención detectada")
-    session_id: str = Field(..., description="ID de sesión para seguimiento")
+    session_id: str = Field(..., description="ID de sesión para seguimiento (legacy)")
+    thread_id: Optional[str] = Field(None, description="ID de hilo para checkpointing (NUEVO - Fase 1)")
     processing_time_ms: float = Field(..., description="Tiempo de procesamiento")
     
     class Config:
@@ -56,6 +59,7 @@ class ChatResponse(BaseModel):
                 "data": {"row_count": 5},
                 "intent": "query_read",
                 "session_id": "abc-123",
+                "thread_id": "5_webapp_abc-123",
                 "processing_time_ms": 523.5
             }
         }
@@ -77,6 +81,10 @@ class ChatResponse(BaseModel):
     - Mostrar estadísticas y conteos
     - Responder preguntas sobre la clínica
     
+    **NUEVO (Fase 1 - Memoria Episódica):**
+    - Usa thread_id para mantener contexto entre turnos de conversación
+    - El frontend debe enviar el mismo thread_id para continuar una conversación
+    
     **Requiere autenticación.** Los resultados se filtran según el rol del usuario.
     """,
 )
@@ -84,11 +92,18 @@ async def chat(
     request: ChatRequest,
     current_user: SysUsuario = Depends(get_current_active_user),
 ):
-    """Endpoint principal del chat con el agente."""
+    """
+    Endpoint principal del chat con el agente.
+    
+    NUEVO (Fase 1): Soporta memoria episódica mediante thread_id.
+    """
     import time
     start_time = time.time()
     
-    logger.info(f"Chat request from user {current_user.id_usuario} ({current_user.rol}): {request.message[:50]}...")
+    logger.info(
+        f"Chat request from user {current_user.id_usuario} ({current_user.rol}): "
+        f"{request.message[:50]}... (thread={request.thread_id})"
+    )
     
     try:
         result = await run_agent(
@@ -96,6 +111,8 @@ async def chat(
             user_id=current_user.id_usuario,
             user_role=current_user.rol,
             session_id=request.session_id,
+            thread_id=request.thread_id,  # ✅ NUEVO: Pasar thread_id para checkpointing
+            origin="webapp",
         )
         
         processing_time = (time.time() - start_time) * 1000
@@ -106,6 +123,7 @@ async def chat(
             data=result.get("response_data"),
             intent=result.get("intent"),
             session_id=result.get("session_id", ""),
+            thread_id=result.get("thread_id"),  # ✅ NUEVO: Retornar thread_id para continuidad
             processing_time_ms=round(processing_time, 2),
         )
         
@@ -119,6 +137,7 @@ async def chat(
             data=None,
             intent=None,
             session_id=request.session_id or "",
+            thread_id=request.thread_id,  # ✅ NUEVO: Mantener thread_id en error
             processing_time_ms=round(processing_time, 2),
         )
 

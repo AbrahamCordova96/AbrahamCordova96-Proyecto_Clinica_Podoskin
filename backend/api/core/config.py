@@ -78,6 +78,10 @@ class Settings(BaseSettings):
     # ========== LangGraph Agent - Behavior Configuration ==========
     # Configuración del comportamiento del agente
     AGENT_MAX_RETRIES: int = 2           # Reintentos en caso de error
+    
+    # ========== LangGraph Agent - Subgraph Architecture (Fase 2) ==========
+    # Habilitar arquitectura de subgrafos por origen
+    ENABLE_SUBGRAPH_ARCHITECTURE: bool = True  # True = usar subgrafos, False = grafo monolítico
     AGENT_TIMEOUT_SECONDS: int = 30      # Timeout por consulta
     AGENT_MAX_RESULTS: int = 100         # Máximo de filas a devolver
     AGENT_FUZZY_THRESHOLD: float = 0.6   # Umbral de similitud para búsqueda difusa

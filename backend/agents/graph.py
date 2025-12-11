@@ -160,9 +160,25 @@ def build_agent_graph() -> StateGraph:  # type: ignore
     """
     Construye el grafo del agente usando LangGraph.
     
+    NUEVO (Fase 2): Soporta dos modos:
+    - Subgraph architecture (recomendado): Routing por origen a subgrafos especializados
+    - Monolithic (legacy): Grafo único tradicional
+    
     Returns:
         StateGraph compilado listo para invocar
     """
+    from backend.api.core.config import get_settings
+    settings = get_settings()
+    
+    # ✅ NUEVO - Fase 2: Usar arquitectura de subgrafos si está habilitada
+    if settings.ENABLE_SUBGRAPH_ARCHITECTURE:
+        logger.info("🔧 Construyendo grafo con arquitectura de subgrafos (Fase 2)")
+        from backend.agents.root_graph import build_root_graph
+        return build_root_graph()
+    
+    # Legacy: Grafo monolítico original
+    logger.info("🔧 Construyendo grafo monolítico (legacy)")
+    
     # Crear grafo con el tipo de estado
     workflow = StateGraph(AgentState)  # type: ignore
     
@@ -246,16 +262,32 @@ _compiled_graph = None
 
 def get_compiled_graph():
     """
-    Obtiene el grafo compilado (singleton).
+    Obtiene el grafo compilado (singleton) con checkpointer para memoria episódica.
+    
+    NUEVO (Fase 1 - Memoria Episódica):
+    - Usa PostgresSaver para persistencia de estado
+    - Permite conversaciones multi-turno con contexto
     
     Returns:
-        Grafo compilado listo para invoke()
+        Grafo compilado listo para invoke() con checkpointing
     """
     global _compiled_graph
     if _compiled_graph is None:
+        from backend.agents.checkpoint_config import get_checkpointer
+        
         workflow = build_agent_graph()
-        _compiled_graph = workflow.compile()
-        logger.info("Grafo del agente compilado exitosamente")
+        
+        # ✅ NUEVO: Compilar con checkpointer para memoria episódica
+        try:
+            checkpointer = get_checkpointer()
+            _compiled_graph = workflow.compile(checkpointer=checkpointer)
+            logger.info("✅ Grafo compilado con checkpointer PostgreSQL (memoria episódica activada)")
+        except Exception as e:
+            logger.error(f"⚠️ Error al compilar con checkpointer: {e}")
+            logger.warning("⚠️ Compilando sin checkpointer (modo stateless)")
+            _compiled_graph = workflow.compile()
+            logger.info("⚠️ Grafo compilado SIN checkpointer (stateless)")
+    
     return _compiled_graph
 
 
@@ -264,43 +296,77 @@ async def run_agent(
     user_id: int,
     user_role: str,
     session_id: str | None = None,
+    thread_id: str | None = None,
+    origin: str = "webapp",
 ) -> Dict[str, Any]:
     """
     Ejecuta el agente con una consulta del usuario.
+    
+    NUEVO (Fase 1 - Memoria Episódica):
+    - Usa thread_id para mantener contexto entre turnos
+    - Configura checkpointing para persistencia de estado
     
     Args:
         user_query: Consulta en lenguaje natural
         user_id: ID del usuario autenticado
         user_role: Rol del usuario (Admin, Podologo, Recepcion)
-        session_id: ID de sesión opcional
+        session_id: ID de sesión opcional (legacy)
+        thread_id: ID de hilo para checkpointing (NUEVO)
+        origin: Origen de la conversación ('webapp', 'whatsapp_paciente', 'whatsapp_user')
         
     Returns:
         Dict con response_text, response_data, y metadata
     """
     import uuid
     from datetime import datetime
+    from backend.agents.checkpoint_config import create_thread_id
     
+    # Generar IDs si no se proporcionan
     session_id = session_id or str(uuid.uuid4())
     
-    # Crear estado inicial
+    # ✅ NUEVO: Crear thread_id para checkpointing
+    if not thread_id:
+        thread_id = create_thread_id(
+            user_id=user_id,
+            origin=origin,
+            conversation_uuid=session_id
+        )
+    
+    # Crear estado inicial con thread_id
     initial_state = create_initial_state(
         user_query=user_query,
         user_id=user_id,
         user_role=user_role,
         session_id=session_id,
+        thread_id=thread_id,
+        origin=origin,
     )
     
-    logger.info(f"Ejecutando agente para: '{user_query[:50]}...' (user={user_id}, role={user_role})")
+    logger.info(
+        f"Ejecutando agente para: '{user_query[:50]}...' "
+        f"(user={user_id}, role={user_role}, thread={thread_id})"
+    )
     
     try:
         # Obtener grafo y ejecutar
         graph = get_compiled_graph()
-        final_state = graph.invoke(initial_state)
+        
+        # ✅ NUEVO: Configurar checkpointing con thread_id
+        config = {
+            "configurable": {
+                "thread_id": thread_id,
+            }
+        }
+        
+        final_state = graph.invoke(initial_state, config=config)
         
         # Agregar timestamp de finalización
         final_state["completed_at"] = datetime.now(timezone.utc)
         
-        logger.info(f"Agente completado. Path: {final_state.get('node_path', [])}")
+        logger.info(
+            f"✅ Agente completado. Path: {final_state.get('node_path', [])} "
+            f"(thread={thread_id})"
+        )
         
         return {
             "success": True,
@@ -310,16 +376,18 @@ async def run_agent(
             "error_type": final_state.get("error_type", "").value if final_state.get("error_type") else None,
             "node_path": final_state.get("node_path", []),
             "session_id": session_id,
+            "thread_id": thread_id,  # ✅ NUEVO: Retornar thread_id para continuidad
         }
         
     except Exception as e:
-        logger.exception(f"Error ejecutando agente: {e}")
+        logger.exception(f"❌ Error ejecutando agente: {e}")
         return {
             "success": False,
             "response_text": "🔧 Ocurrió un error procesando tu consulta. Por favor intenta de nuevo.",
             "response_data": {},
             "error": str(e),
             "session_id": session_id,
+            "thread_id": thread_id,
         }
 
 
