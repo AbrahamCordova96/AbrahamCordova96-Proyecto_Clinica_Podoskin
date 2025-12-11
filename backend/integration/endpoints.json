@@ -1,0 +1,919 @@
+{
+  "generated_at": "2025-12-11T01:31:27Z",
+  "total_endpoints": 82,
+  "description": "Machine-readable catalog of all API endpoints for LangGraph tools and Gemini function calling",
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/v1/audit/export",
+      "function_name": "export_audit_logs",
+      "file_path": "backend/api/routes/audit.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/audit/{tabla}/{registro_id}",
+      "function_name": "get_registro_history",
+      "file_path": "backend/api/routes/audit.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/auth/change-password",
+      "function_name": "change_password",
+      "file_path": "backend/api/routes/auth.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "function_name": "login",
+      "file_path": "backend/api/routes/auth.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/auth/me",
+      "function_name": "get_my_profile",
+      "file_path": "backend/api/routes/auth.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/chat/capabilities",
+      "function_name": "chat_capabilities",
+      "file_path": "backend/api/routes/chat.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/chat/health",
+      "function_name": "chat_health",
+      "file_path": "backend/api/routes/chat.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/citas/agenda/{fecha}",
+      "function_name": "get_agenda_dia",
+      "file_path": "backend/api/routes/citas.py",
+      "auth_required": false,
+      "roles_allowed": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/citas/disponibilidad",
+      "function_name": "get_disponibilidad",
+      "file_path": "backend/api/routes/citas.py",
+      "auth_required": false,
+      "roles_allowed": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/citas/{cita_id}",
+      "function_name": "cancel_cita",
+      "file_path": "backend/api/routes/citas.py",
+      "auth_required": false,
+      "roles_allowed": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/citas/{cita_id}",
+      "function_name": "get_cita",
+      "file_path": "backend/api/routes/citas.py",
+      "auth_required": false,
+      "roles_allowed": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/citas/{cita_id}",
+      "function_name": "update_cita",
+      "file_path": "backend/api/routes/citas.py",
+      "auth_required": false,
+      "roles_allowed": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/citas/{cita_id}/status",
+      "function_name": "update_cita_status",
+      "file_path": "backend/api/routes/citas.py",
+      "auth_required": false,
+      "roles_allowed": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/evidencias/evolucion/{evolucion_id}",
+      "function_name": "list_evidencias_by_evolucion",
+      "file_path": "backend/api/routes/evidencias.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/evidencias/tratamiento/{tratamiento_id}",
+      "function_name": "list_evidencias_by_tratamiento",
+      "file_path": "backend/api/routes/evidencias.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/evidencias/upload",
+      "function_name": "upload_evidencia",
+      "file_path": "backend/api/routes/evidencias.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/evidencias/{evidencia_id}",
+      "function_name": "delete_evidencia",
+      "file_path": "backend/api/routes/evidencias.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/evidencias/{evidencia_id}",
+      "function_name": "get_evidencia",
+      "file_path": "backend/api/routes/evidencias.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/evidencias/{evidencia_id}",
+      "function_name": "update_evidencia",
+      "file_path": "backend/api/routes/evidencias.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/evoluciones/{evolucion_id}",
+      "function_name": "delete_evolucion",
+      "file_path": "backend/api/routes/evoluciones.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/evoluciones/{evolucion_id}",
+      "function_name": "get_evolucion",
+      "file_path": "backend/api/routes/evoluciones.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/evoluciones/{evolucion_id}",
+      "function_name": "update_evolucion",
+      "file_path": "backend/api/routes/evoluciones.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/examples/pacientes",
+      "function_name": "create_paciente",
+      "file_path": "backend/api/routes/examples_schemas.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/examples/pacientes/{id}",
+      "function_name": "update_paciente",
+      "file_path": "backend/api/routes/examples_schemas.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/examples/tratamientos",
+      "function_name": "create_tratamiento",
+      "file_path": "backend/api/routes/examples_schemas.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/finance/metodos",
+      "function_name": "list_metodos",
+      "file_path": "backend/api/routes/finance.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/finance/metodos",
+      "function_name": "create_metodo",
+      "file_path": "backend/api/routes/finance.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/finance/pagos",
+      "function_name": "list_pagos",
+      "file_path": "backend/api/routes/finance.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/finance/pagos",
+      "function_name": "create_pago",
+      "file_path": "backend/api/routes/finance.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/finance/pagos/{id}",
+      "function_name": "get_pago",
+      "file_path": "backend/api/routes/finance.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/finance/pagos/{id}/transacciones",
+      "function_name": "add_transaccion",
+      "file_path": "backend/api/routes/finance.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/historial/alergias",
+      "function_name": "listar_alergias",
+      "file_path": "backend/api/routes/historial_detalles.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/historial/alergias",
+      "function_name": "crear_alergia",
+      "file_path": "backend/api/routes/historial_detalles.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/historial/alergias/{id_alergia}",
+      "function_name": "eliminar_alergia",
+      "file_path": "backend/api/routes/historial_detalles.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/historial/alergias/{id_alergia}",
+      "function_name": "obtener_alergia",
+      "file_path": "backend/api/routes/historial_detalles.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/historial/alergias/{id_alergia}",
+      "function_name": "actualizar_alergia",
+      "file_path": "backend/api/routes/historial_detalles.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/historial/antecedentes-no-patologicos",
+      "function_name": "listar_antecedentes",
+      "file_path": "backend/api/routes/historial_detalles.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/historial/antecedentes-no-patologicos",
+      "function_name": "crear_antecedente",
+      "file_path": "backend/api/routes/historial_detalles.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/historial/antecedentes-no-patologicos/{id_antnp}",
+      "function_name": "eliminar_antecedente",
+      "file_path": "backend/api/routes/historial_detalles.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/historial/antecedentes-no-patologicos/{id_antnp}",
+      "function_name": "obtener_antecedente",
+      "file_path": "backend/api/routes/historial_detalles.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/historial/antecedentes-no-patologicos/{id_antnp}",
+      "function_name": "actualizar_antecedente",
+      "file_path": "backend/api/routes/historial_detalles.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/historial/conversaciones-digitales",
+      "function_name": "listar_conversaciones_digitales",
+      "file_path": "backend/api/routes/historial_detalles.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/historial/conversaciones-digitales",
+      "function_name": "crear_conversacion_digital",
+      "file_path": "backend/api/routes/historial_detalles.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/historial/conversaciones-digitales/{id_conversacion}",
+      "function_name": "eliminar_conversacion_digital",
+      "file_path": "backend/api/routes/historial_detalles.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/historial/conversaciones-digitales/{id_conversacion}",
+      "function_name": "obtener_conversacion_digital",
+      "file_path": "backend/api/routes/historial_detalles.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/historial/conversaciones-digitales/{id_conversacion}",
+      "function_name": "actualizar_conversacion_digital",
+      "file_path": "backend/api/routes/historial_detalles.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/historial/suplementos",
+      "function_name": "listar_suplementos",
+      "file_path": "backend/api/routes/historial_detalles.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/historial/suplementos",
+      "function_name": "crear_suplemento",
+      "file_path": "backend/api/routes/historial_detalles.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/historial/suplementos/{id_suplemento}",
+      "function_name": "eliminar_suplemento",
+      "file_path": "backend/api/routes/historial_detalles.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/historial/suplementos/{id_suplemento}",
+      "function_name": "obtener_suplemento",
+      "file_path": "backend/api/routes/historial_detalles.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/historial/suplementos/{id_suplemento}",
+      "function_name": "actualizar_suplemento",
+      "file_path": "backend/api/routes/historial_detalles.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/integration/save-transcript",
+      "function_name": "save_transcript",
+      "file_path": "backend/api/routes/integration.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/integration/transcript-history",
+      "function_name": "get_transcript_history",
+      "file_path": "backend/api/routes/integration.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/integration/user-context",
+      "function_name": "get_user_context",
+      "file_path": "backend/api/routes/integration.py",
+      "auth_required": true,
+      "roles_allowed": [
+        "Podologo",
+        "Recepcion",
+        "Admin"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/notifications/appointment-reminder",
+      "function_name": "send_appointment_reminder_endpoint",
+      "file_path": "backend/api/routes/notifications.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/notifications/bulk-reminders",
+      "function_name": "send_bulk_reminders",
+      "file_path": "backend/api/routes/notifications.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/notifications/upcoming-reminders",
+      "function_name": "get_upcoming_reminders",
+      "file_path": "backend/api/routes/notifications.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/pacientes/buscar",
+      "function_name": "search_pacientes",
+      "file_path": "backend/api/routes/pacientes.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/pacientes/{paciente_id}",
+      "function_name": "soft_delete_paciente",
+      "file_path": "backend/api/routes/pacientes.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/pacientes/{paciente_id}",
+      "function_name": "get_paciente",
+      "file_path": "backend/api/routes/pacientes.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/pacientes/{paciente_id}",
+      "function_name": "update_paciente",
+      "file_path": "backend/api/routes/pacientes.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/pacientes/{paciente_id}/export-pdf",
+      "function_name": "export_patient_pdf",
+      "file_path": "backend/api/routes/pacientes.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/pacientes/{paciente_id}/purge",
+      "function_name": "purge_paciente",
+      "file_path": "backend/api/routes/pacientes.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/podologos/{podologo_id}",
+      "function_name": "delete_podologo",
+      "file_path": "backend/api/routes/podologos.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/podologos/{podologo_id}",
+      "function_name": "get_podologo",
+      "file_path": "backend/api/routes/podologos.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/podologos/{podologo_id}",
+      "function_name": "update_podologo",
+      "file_path": "backend/api/routes/podologos.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/prospectos/{prospecto_id}",
+      "function_name": "get_prospecto",
+      "file_path": "backend/api/routes/prospectos.py",
+      "auth_required": false,
+      "roles_allowed": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/prospectos/{prospecto_id}",
+      "function_name": "update_prospecto",
+      "file_path": "backend/api/routes/prospectos.py",
+      "auth_required": false,
+      "roles_allowed": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/prospectos/{prospecto_id}/convertir",
+      "function_name": "convertir_prospecto",
+      "file_path": "backend/api/routes/prospectos.py",
+      "auth_required": false,
+      "roles_allowed": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/servicios/{servicio_id}",
+      "function_name": "delete_servicio",
+      "file_path": "backend/api/routes/servicios.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/servicios/{servicio_id}",
+      "function_name": "get_servicio",
+      "file_path": "backend/api/routes/servicios.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/servicios/{servicio_id}",
+      "function_name": "update_servicio",
+      "file_path": "backend/api/routes/servicios.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/statistics/dashboard",
+      "function_name": "get_dashboard_statistics",
+      "file_path": "backend/api/routes/statistics.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/statistics/summary",
+      "function_name": "get_statistics_summary",
+      "file_path": "backend/api/routes/statistics.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/tratamientos/{tratamiento_id}",
+      "function_name": "soft_delete_tratamiento",
+      "file_path": "backend/api/routes/tratamientos.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/tratamientos/{tratamiento_id}",
+      "function_name": "get_tratamiento",
+      "file_path": "backend/api/routes/tratamientos.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/tratamientos/{tratamiento_id}",
+      "function_name": "update_tratamiento",
+      "file_path": "backend/api/routes/tratamientos.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/tratamientos/{tratamiento_id}/status",
+      "function_name": "update_tratamiento_status",
+      "file_path": "backend/api/routes/tratamientos.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/usuarios/{usuario_id}",
+      "function_name": "delete_usuario",
+      "file_path": "backend/api/routes/usuarios.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/usuarios/{usuario_id}",
+      "function_name": "get_usuario",
+      "file_path": "backend/api/routes/usuarios.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/usuarios/{usuario_id}",
+      "function_name": "update_usuario",
+      "file_path": "backend/api/routes/usuarios.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/usuarios/{usuario_id}/reset-password",
+      "function_name": "reset_usuario_password",
+      "file_path": "backend/api/routes/usuarios.py",
+      "auth_required": false,
+      "roles_allowed": [
+        "Podologo",
+        "Admin"
+      ]
+    }
+  ]
+}

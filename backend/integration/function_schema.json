@@ -1,0 +1,236 @@
+{
+  "generated_at": "2025-12-11T01:31:27Z",
+  "description": "Function schemas for Gemini function calling. These describe available functions that the assistant can invoke to interact with the backend API.",
+  "functions": [
+    {
+      "name": "get_patient_by_id",
+      "description": "Obtiene el detalle de un paciente por ID (Get patient details by ID)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "paciente_id": {
+            "type": "integer",
+            "description": "ID del paciente"
+          },
+          "include_history": {
+            "type": "boolean",
+            "description": "Incluir historial completo"
+          }
+        },
+        "required": ["paciente_id"]
+      },
+      "auth_required": true,
+      "roles_allowed": ["Admin", "Podologo"],
+      "response_mapping": {
+        "id": "id_paciente",
+        "name": "nombres",
+        "lastname": "apellidos",
+        "birth_date": "fecha_nacimiento"
+      }
+    },
+    {
+      "name": "list_patients",
+      "description": "Lista pacientes con filtros opcionales (List patients with optional filters)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "skip": {
+            "type": "integer",
+            "description": "Número de registros a saltar para paginación",
+            "default": 0
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Límite de registros a retornar",
+            "default": 50
+          },
+          "search": {
+            "type": "string",
+            "description": "Texto para buscar en nombre/apellidos"
+          }
+        },
+        "required": []
+      },
+      "auth_required": true,
+      "roles_allowed": ["Admin", "Podologo", "Recepcion"]
+    },
+    {
+      "name": "get_appointments",
+      "description": "Lista citas con filtros de fecha y podólogo (List appointments with date and podiatrist filters)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "fecha": {
+            "type": "string",
+            "format": "date",
+            "description": "Fecha específica (YYYY-MM-DD)"
+          },
+          "podologo_id": {
+            "type": "integer",
+            "description": "ID del podólogo"
+          },
+          "estado": {
+            "type": "string",
+            "enum": ["pendiente", "confirmada", "completada", "cancelada"],
+            "description": "Estado de la cita"
+          }
+        },
+        "required": []
+      },
+      "auth_required": true,
+      "roles_allowed": ["Admin", "Podologo", "Recepcion"]
+    },
+    {
+      "name": "create_appointment",
+      "description": "Crea una nueva cita (Create new appointment)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "paciente_id": {
+            "type": "integer",
+            "description": "ID del paciente"
+          },
+          "podologo_id": {
+            "type": "integer",
+            "description": "ID del podólogo"
+          },
+          "fecha_cita": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Fecha y hora de la cita"
+          },
+          "motivo": {
+            "type": "string",
+            "description": "Motivo de la consulta"
+          }
+        },
+        "required": ["paciente_id", "podologo_id", "fecha_cita"]
+      },
+      "auth_required": true,
+      "roles_allowed": ["Admin", "Podologo", "Recepcion"]
+    },
+    {
+      "name": "get_tratamientos",
+      "description": "Obtiene tratamientos de un paciente (Get patient treatments)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "paciente_id": {
+            "type": "integer",
+            "description": "ID del paciente"
+          },
+          "estado": {
+            "type": "string",
+            "enum": ["activo", "completado", "suspendido"],
+            "description": "Estado del tratamiento"
+          }
+        },
+        "required": ["paciente_id"]
+      },
+      "auth_required": true,
+      "roles_allowed": ["Admin", "Podologo"]
+    },
+    {
+      "name": "get_evoluciones",
+      "description": "Obtiene notas clínicas (evoluciones) de un tratamiento (Get clinical notes for a treatment)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "tratamiento_id": {
+            "type": "integer",
+            "description": "ID del tratamiento"
+          }
+        },
+        "required": ["tratamiento_id"]
+      },
+      "auth_required": true,
+      "roles_allowed": ["Admin", "Podologo"]
+    },
+    {
+      "name": "get_statistics",
+      "description": "Obtiene estadísticas y métricas del consultorio (Get clinic statistics and metrics)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "description": "Fecha inicial para el reporte"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "description": "Fecha final para el reporte"
+          },
+          "podologo_id": {
+            "type": "integer",
+            "description": "Filtrar por podólogo específico"
+          }
+        },
+        "required": []
+      },
+      "auth_required": true,
+      "roles_allowed": ["Admin", "Podologo"]
+    },
+    {
+      "name": "get_audit_logs",
+      "description": "Obtiene logs de auditoría (Get audit logs)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "description": "Fecha inicial"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "description": "Fecha final"
+          },
+          "usuario_id": {
+            "type": "integer",
+            "description": "Filtrar por usuario"
+          },
+          "tabla_afectada": {
+            "type": "string",
+            "description": "Filtrar por tabla"
+          }
+        },
+        "required": []
+      },
+      "auth_required": true,
+      "roles_allowed": ["Admin", "Podologo"]
+    },
+    {
+      "name": "open_file_picker",
+      "description": "Abre el selector de archivos del navegador (Opens browser file picker) - NO IMPLEMENTADO EN BACKEND, solo frontend",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "accept": {
+            "type": "string",
+            "description": "Tipos de archivo aceptados (e.g., 'image/*', '.pdf')"
+          },
+          "multiple": {
+            "type": "boolean",
+            "description": "Permitir selección múltiple",
+            "default": false
+          }
+        },
+        "required": []
+      },
+      "auth_required": false,
+      "roles_allowed": [],
+      "frontend_only": true,
+      "note": "Esta función solo dispara el file picker del navegador, no sube archivos por voz"
+    }
+  ],
+  "usage_notes": {
+    "authentication": "Todas las funciones marcadas con auth_required=true requieren JWT Bearer token",
+    "source_refs": "Todas las respuestas de funciones que devuelven datos clínicos DEBEN incluir source_refs para trazabilidad",
+    "response_hash": "Las respuestas sensibles deben incluir response_hash (SHA-256) para non-repudiation",
+    "error_handling": "Si una función no tiene datos, el asistente debe decir 'No tengo registro' en lugar de inventar",
+    "confirmations": "Acciones destructivas (DELETE) requieren confirmación interactiva antes de ejecutarse"
+  }
+}

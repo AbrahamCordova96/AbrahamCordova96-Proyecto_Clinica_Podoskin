@@ -43,6 +43,8 @@ from backend.api.routes import historial_detalles
 from backend.api.routes import chat
 from backend.api.routes import statistics
 from backend.api.routes import notifications
+from backend.api.routes import integration
+from backend.api.routes import websocket_langgraph
 
 
 # =============================================================================
@@ -167,6 +169,10 @@ app.include_router(chat.router, prefix="/api/v1")
 app.include_router(statistics.router, prefix="/api/v1")
 # Notifications - Email/SMS reminders
 app.include_router(notifications.router, prefix="/api/v1")
+# Integration - Voice frontend (Gemini Live + LangGraph)
+app.include_router(integration.router, prefix="/api/v1")
+# WebSocket - LangGraph streaming
+app.include_router(websocket_langgraph.router)
 
 
 # =============================================================================

@@ -53,14 +53,41 @@ class AuditLog(Base):
     __table_args__ = {"schema": "auth"}
 
     id_log = Column(BigInteger, primary_key=True, autoincrement=True)
-    timestamp_accion = Column(TIMESTAMP(timezone=True), server_default=func.now(), primary_key=True)
+    timestamp_accion = Column(TIMESTAMP(timezone=True), server_default=func.now())
     tabla_afectada = Column(String, nullable=False)
-    registro_id = Column(BigInteger, nullable=False)
+    registro_id = Column(BigInteger, nullable=True)
     accion = Column(String, nullable=False)
 
     usuario_id = Column(BigInteger, ForeignKey("auth.sys_usuarios.id_usuario"), nullable=True)
+    username = Column(String, nullable=True)
+    session_id = Column(String, nullable=True)
     datos_anteriores = Column(JSONB)
     datos_nuevos = Column(JSONB)
     ip_address = Column(INET)
+    
+    # New fields for integration with LangGraph/Gemini
+    method = Column(String, nullable=True)  # HTTP method (GET, POST, etc.)
+    endpoint = Column(String, nullable=True)  # API endpoint path
+    request_body = Column(String, nullable=True)  # Masked request body
+    response_hash = Column(String, nullable=True)  # SHA-256 of response
+    source_refs = Column(JSONB, nullable=True)  # Provenance references
+    note = Column(String, nullable=True)  # Additional notes
 
+    usuario = relationship("SysUsuario")
+
+
+class VoiceTranscript(Base):
+    """Store voice conversation transcripts for audit and history"""
+    __tablename__ = "voice_transcripts"
+    __table_args__ = {"schema": "auth"}
+
+    id_transcript = Column(BigInteger, primary_key=True, autoincrement=True)
+    session_id = Column(String, nullable=False, index=True)
+    user_id = Column(BigInteger, ForeignKey("auth.sys_usuarios.id_usuario"), nullable=False)
+    user_text = Column(String, nullable=False)
+    assistant_text = Column(String, nullable=True)
+    timestamp = Column(TIMESTAMP(timezone=True), nullable=False)
+    langgraph_job_id = Column(String, nullable=True)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    
     usuario = relationship("SysUsuario")
