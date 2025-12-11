@@ -17,3 +17,6 @@ httpx==0.28.1  # Ya está en requirements.txt pero necesario para tests
 
 # ===== DATABASE TESTING =====
 pytest-postgresql==6.1.1
+
+# ===== TERMINAL CHATBOT =====
+rich==13.9.4  # Para interfaz mejorada del chatbot terminal
