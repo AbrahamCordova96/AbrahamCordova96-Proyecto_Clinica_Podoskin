@@ -35,6 +35,16 @@
 | **Quick Start Testing** | Guía rápida (5 min) | `../backend/tests/QUICKSTART.md` |
 | **Terminal Chatbot** | Chatbot IA con consultas NL | `../backend/tools/terminal_chatbot.py` |
 | **Scripts de Testing** | seed_test_data.py, clean_database.py | `../backend/tests/scripts/` |
+| **Testing y Herramientas IA - Informe** | Resumen ejecutivo para cliente | `Informes/Testing_y_Herramientas_IA.md` |
+
+### 🔧 Implementación y Configuración
+
+| Documento | Descripción | Ubicación |
+|-----------|-------------|-----------|
+| **Implementation Summary** | Resumen de integración backend | `Informes/IMPLEMENTATION_SUMMARY_Integration.md` |
+| **Quick Start Integration** | Inicio rápido de integración | `Desarrollo/QUICK_START_Integration.md` |
+| **Phased Review Guide** | Guía de revisión por fases | `Desarrollo/PHASED_REVIEW_GUIDE.md` |
+| **Archive Backend Prompt** | Prompt de integración backend | `Desarrollo/ARCHIVE_BACKEND_FOR_AGENTS_PROMPT.md` |
 
 ### Post-Mortem y Aprendizaje
 
@@ -57,15 +67,29 @@ Docs/
 │
 ├── Desarrollo/            ← Cómo lo implementamos
 │   ├── PodoSkin_Desarrollo_BD_v4.md
-│   └── PodoSkin_Desarrollo_Modelos_SQLAlchemy.md
+│   ├── PodoSkin_Desarrollo_Modelos_SQLAlchemy.md
+│   ├── QUICK_START_Integration.md
+│   ├── PHASED_REVIEW_GUIDE.md
+│   └── ARCHIVE_BACKEND_FOR_AGENTS_PROMPT.md
 │
 ├── Informes/              ← Documentos para el cliente
 │   ├── PodoSkin_Informe_Nueva_BD.md
 │   ├── PodoSkin_Informe_Modelos_Datos.md
 │   ├── PodoSkin_Propuesta_Permisos_API.md
-│   └── Especificacion_Funcional_BD.md
+│   ├── Resumen_Ejecutivo_Final.md
+│   ├── Especificacion_Funcional_BD.md
+│   ├── Testing_y_Herramientas_IA.md  ← 🆕
+│   └── IMPLEMENTATION_SUMMARY_Integration.md
 │
-└── Lecciones_Aprendidas.md ← Post-mortem del proyecto
+├── Lecciones_Aprendidas.md ← Post-mortem del proyecto
+├── ENHANCEMENTS_GUIDE.md
+├── IMPLEMENTATION_SUMMARY.md
+├── LangGraph_CLI_Commands.md
+├── PHASE1_CHECKPOINTING_IMPLEMENTATION.md
+├── PHASE2_SUBGRAPH_ARCHITECTURE.md
+├── PHASE3_4_COMBINED_IMPLEMENTATION.md
+├── PROMPT_LANGGRAPH_AGENT.md
+└── MEMORY_ARCHITECTURE_ANALYSIS.md
 ```
 
 ---
