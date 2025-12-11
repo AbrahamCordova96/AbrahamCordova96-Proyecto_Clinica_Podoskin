@@ -1,0 +1,19 @@
+# =====================================================
+# Dependencias para Testing
+# =====================================================
+
+# ===== TESTING FRAMEWORK =====
+pytest==8.3.4
+pytest-asyncio==0.24.0
+pytest-cov==6.0.0
+pytest-mock==3.14.0
+
+# ===== FAKE DATA GENERATION =====
+faker==33.1.0
+factory-boy==3.3.1
+
+# ===== HTTP TESTING =====
+httpx==0.28.1  # Ya está en requirements.txt pero necesario para tests
+
+# ===== DATABASE TESTING =====
+pytest-postgresql==6.1.1
