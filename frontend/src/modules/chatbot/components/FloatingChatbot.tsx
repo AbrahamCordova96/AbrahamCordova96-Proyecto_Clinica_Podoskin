@@ -1,13 +1,15 @@
 // ============================================================================
-// CHATBOT FLOTANTE PERSISTENTE CON VOZ
+// CHATBOT FLOTANTE PERSISTENTE CON VOZ Y NAVEGACIÓN
 // ============================================================================
 
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ChatCircleDots, X, Minus, PaperPlaneRight, Microphone, MicrophoneSlash, SpeakerHigh, SpeakerSlash, Trash, CalendarCheck, UserPlus, Notebook, Camera, Question, Lightbulb } from '@phosphor-icons/react'
 import { useChatStore } from '../stores/chatStore'
 import { useAuthStore } from '../../auth/stores/authStore'
 import { ChatMessage } from './ChatMessage'
 import { toast } from 'sonner'
+import { navigationHandler } from '../services/navigationHandler'
 
 const QUICK_COMMANDS = [
   { id: 'help', label: 'Ayuda general', icon: Question, category: 'Ayuda' },
@@ -19,6 +21,7 @@ const QUICK_COMMANDS = [
 ]
 
 export const FloatingChatbot = () => {
+  const navigate = useNavigate()
   const { user } = useAuthStore()
   const { 
     messages, 
@@ -38,6 +41,11 @@ export const FloatingChatbot = () => {
   
   const [inputValue, setInputValue] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  
+  // Inicializar navigationHandler con la función navigate
+  useEffect(() => {
+    navigationHandler.setNavigate(navigate)
+  }, [navigate])
   
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })

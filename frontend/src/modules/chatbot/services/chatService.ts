@@ -6,6 +6,7 @@ import { chatServiceMock } from './chatService.mock'
 import { geminiLiveService } from './geminiLiveService'
 import { voiceService } from './voiceService'
 import { backendIntegration } from './backendIntegration'
+import { navigationHandler } from './navigationHandler'
 
 export const chatServiceReal = {
   /**
@@ -64,12 +65,25 @@ export const chatServiceReal = {
 
   /**
    * Ejecutar una función llamada por Gemini o el backend
-   * Ahora usa el backend real en lugar de datos mock
+   * Ahora incluye funciones de navegación y usa el backend real
    */
   executeFunctionCall: async (functionName: string, args: Record<string, any>): Promise<any> => {
     console.log(`Ejecutando función: ${functionName}`, args)
     
-    // Usar backend real para ejecutar las funciones
+    // ========== FUNCIONES DE NAVEGACIÓN (NO requieren backend) ==========
+    if (functionName === 'navigate_to_page') {
+      return await navigationHandler.navigateToPage(args)
+    }
+    
+    if (functionName === 'open_modal') {
+      return await navigationHandler.openModal(args)
+    }
+    
+    if (functionName === 'show_notification') {
+      return await navigationHandler.showNotification(args.message, args.type)
+    }
+    
+    // ========== FUNCIONES DE DATOS (requieren backend) ==========
     return await backendIntegration.executeFunctionCall(functionName, args)
   },
 

@@ -65,6 +65,70 @@ export const AVAILABLE_FUNCTIONS = {
       },
       required: ['paciente_id', 'podologo_id', 'fecha_hora']
     }
+  },
+  
+  // ========== FUNCIONES DE NAVEGACIÓN ==========
+  navigate_to_page: {
+    name: 'navigate_to_page',
+    description: 'Navega a una página específica del sistema. Usa esto cuando el usuario pida ir a alguna sección como "llévame a...", "abre...", "ir a..."',
+    parameters: {
+      type: 'object',
+      properties: {
+        page: {
+          type: 'string',
+          enum: ['dashboard', 'inicio', 'pacientes', 'historial', 'citas', 'agenda', 'tratamientos', 'servicios', 'reportes', 'settings', 'configuracion', 'ajustes'],
+          description: 'Nombre de la página destino en español o inglés'
+        },
+        params: {
+          type: 'object',
+          description: 'Parámetros opcionales como ID de recurso',
+          properties: {
+            id: { type: 'number' }
+          }
+        }
+      },
+      required: ['page']
+    }
+  },
+  
+  open_modal: {
+    name: 'open_modal',
+    description: 'Abre un formulario modal para crear pacientes, citas, tratamientos, etc. Usa esto cuando el usuario pida "crear", "nuevo", "agregar"',
+    parameters: {
+      type: 'object',
+      properties: {
+        modal: {
+          type: 'string',
+          enum: ['crear_paciente', 'crear_cita', 'crear_tratamiento', 'create_patient', 'create_appointment', 'create_treatment'],
+          description: 'Tipo de formulario a abrir'
+        },
+        prefill: {
+          type: 'object',
+          description: 'Datos para pre-llenar el formulario'
+        }
+      },
+      required: ['modal']
+    }
+  },
+  
+  show_notification: {
+    name: 'show_notification',
+    description: 'Muestra una notificación al usuario con información importante',
+    parameters: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          description: 'Mensaje a mostrar'
+        },
+        type: {
+          type: 'string',
+          enum: ['success', 'error', 'warning', 'info'],
+          description: 'Tipo de notificación'
+        }
+      },
+      required: ['message']
+    }
   }
 }
 
