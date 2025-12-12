@@ -6,6 +6,7 @@ import { DashboardView } from '../modules/dashboard/components/DashboardView'
 import { AgendaView } from '../modules/agenda/components/AgendaView'
 import { HistorialPacientesView } from '../modules/pacientes/components/HistorialPacientesView'
 import { ConfiguracionesView } from '../components/ConfiguracionesView'
+import { SettingsPage } from '../modules/settings'
 
 const UnauthorizedPage = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -26,6 +27,7 @@ export const AppRoutes = () => (
         <Route element={<MainLayout />}>
           <Route path="/dashboard" element={<DashboardView />} />
           <Route path="/agenda" element={<AgendaView />} />
+          <Route path="/settings" element={<SettingsPage />} />
           
           <Route element={<ProtectedRoute allowedRoles={['Admin', 'Podologo']} />}>
             <Route path="/historial-pacientes" element={<HistorialPacientesView />} />
