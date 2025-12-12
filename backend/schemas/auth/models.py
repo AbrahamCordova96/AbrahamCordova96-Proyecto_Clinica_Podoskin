@@ -46,6 +46,16 @@ class SysUsuario(Base):
     # FK a Clinica (opcional al inicio, pero usado para multi-tenant)
     clinica_id = Column(BigInteger, ForeignKey("auth.clinicas.id_clinica"), nullable=True)
     clinica = relationship("Clinica", back_populates="usuarios")
+    
+    # ======== NUEVO: Campos para API Key de Gemini ========
+    # Almacena la API Key de Google Gemini encriptada con Fernet
+    # La encriptación se realiza usando el servicio backend/api/core/encryption.py
+    gemini_api_key_encrypted = Column(String(500), nullable=True, comment="API Key de Gemini encriptada con Fernet")
+    # Timestamp de la última vez que el usuario actualizó su API Key
+    gemini_api_key_updated_at = Column(TIMESTAMP(timezone=True), nullable=True, comment="Última actualización de la API Key")
+    # Timestamp de la última validación exitosa contra la API de Gemini
+    gemini_api_key_last_validated = Column(TIMESTAMP(timezone=True), nullable=True, comment="Última validación exitosa de la API Key")
+    # ======================================================
 
 
 class AuditLog(Base):

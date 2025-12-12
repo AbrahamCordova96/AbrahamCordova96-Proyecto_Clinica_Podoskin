@@ -14,8 +14,10 @@
 
 from typing import Optional
 from datetime import datetime
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from sqlalchemy.sql import func as sql_func
 from pydantic import BaseModel, Field, EmailStr
 
 from backend.api.deps.database import get_auth_db
@@ -23,6 +25,12 @@ from backend.api.deps.permissions import require_role, ROLE_ADMIN, CLINICAL_ROLE
 from backend.api.deps.auth import get_current_active_user
 from backend.schemas.auth.models import SysUsuario
 from backend.schemas.auth.auth_utils import hash_password
+from backend.api.core.encryption import encrypt_api_key, decrypt_api_key
+from backend.api.services.gemini_validator import validate_gemini_api_key
+from backend.schemas.auth.schemas import GeminiKeyUpdate, GeminiKeyStatus
+
+# Logger para registrar operaciones importantes
+logger = logging.getLogger(__name__)
 
 
 # =============================================================================
@@ -328,3 +336,277 @@ async def delete_usuario(
     db.commit()
     
     return {"message": f"Usuario '{usuario.nombre_usuario}' desactivado", "id": usuario_id}
+
+
+# =============================================================================
+# ENDPOINT: GET /usuarios/{id}/gemini-key/status
+# Obtiene el estado de la API Key de Gemini del usuario
+# =============================================================================
+
+@router.get("/{usuario_id}/gemini-key/status", response_model=GeminiKeyStatus)
+async def get_gemini_key_status(
+    usuario_id: int,
+    current_user: SysUsuario = Depends(get_current_active_user),
+    db: Session = Depends(get_auth_db)
+):
+    """
+    Obtiene el estado de la API Key de Gemini del usuario.
+    
+    Este endpoint permite verificar:
+    - Si el usuario tiene una API Key configurada
+    - Si la API Key es válida (hace validación en tiempo real)
+    - Cuándo fue la última actualización
+    - Cuándo fue la última validación exitosa
+    
+    **Permisos:** 
+    - Un usuario puede ver su propio estado
+    - Admin puede ver el estado de cualquier usuario
+    
+    **Uso típico:**
+    - Frontend llama este endpoint al cargar el perfil del usuario
+    - Si has_key=False, mostrar botón "Configurar API Key"
+    - Si has_key=True pero is_valid=False, mostrar advertencia
+    
+    **Respuesta:**
+    ```json
+    {
+        "has_key": true,
+        "is_valid": true,
+        "last_updated": "2024-12-12T10:30:00Z",
+        "last_validated": "2024-12-12T10:30:00Z"
+    }
+    ```
+    """
+    # Control de acceso: Solo el propio usuario o Admin pueden ver el estado
+    if usuario_id != current_user.id_usuario and current_user.rol != ROLE_ADMIN:
+        logger.warning(f"Usuario {current_user.id_usuario} intentó acceder al estado de API Key del usuario {usuario_id}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permiso para ver esta información"
+        )
+    
+    # Buscar el usuario en la base de datos
+    usuario = db.query(SysUsuario).filter(
+        SysUsuario.id_usuario == usuario_id
+    ).first()
+    
+    if not usuario:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado"
+        )
+    
+    # Verificar si tiene API Key configurada
+    has_key = bool(usuario.gemini_api_key_encrypted)
+    
+    # Si tiene key, verificar si es válida haciendo una llamada a la API de Google
+    is_valid = None
+    if has_key:
+        try:
+            # Desencriptar la API Key
+            decrypted_key = decrypt_api_key(usuario.gemini_api_key_encrypted)
+            # Validar contra la API de Gemini
+            is_valid, _ = await validate_gemini_api_key(decrypted_key)
+            logger.info(f"Validación de API Key para usuario {usuario_id}: {'válida' if is_valid else 'inválida'}")
+        except Exception as e:
+            logger.error(f"Error validando API Key para usuario {usuario_id}: {e}")
+            is_valid = False
+    
+    return GeminiKeyStatus(
+        has_key=has_key,
+        is_valid=is_valid,
+        last_updated=usuario.gemini_api_key_updated_at,
+        last_validated=usuario.gemini_api_key_last_validated
+    )
+
+
+# =============================================================================
+# ENDPOINT: PUT /usuarios/{id}/gemini-key
+# Actualiza la API Key de Gemini del usuario
+# =============================================================================
+
+@router.put("/{usuario_id}/gemini-key")
+async def update_gemini_key(
+    usuario_id: int,
+    data: GeminiKeyUpdate,
+    current_user: SysUsuario = Depends(get_current_active_user),
+    db: Session = Depends(get_auth_db)
+):
+    """
+    Actualiza la API Key de Gemini del usuario.
+    
+    Proceso de actualización:
+    1. Valida permisos (usuario propio o Admin)
+    2. Verifica que el usuario existe
+    3. Valida la API Key contra la API de Google Gemini
+    4. Si es válida, la encripta con Fernet
+    5. Guarda en la base de datos
+    6. Actualiza los timestamps
+    
+    **Permisos:** 
+    - Un usuario puede actualizar su propia API Key
+    - Admin puede actualizar la API Key de cualquier usuario
+    
+    **Seguridad:**
+    - La API Key se valida antes de guardar (evita keys inválidas)
+    - Se encripta con Fernet antes de almacenar en BD (nunca en texto plano)
+    - Se loguea la operación para auditoría (sin exponer la key)
+    
+    **Request body:**
+    ```json
+    {
+        "api_key": "AIzaSyC1234567890abcdefghijklmnopqrstuv"
+    }
+    ```
+    
+    **Respuesta exitosa (200):**
+    ```json
+    {
+        "message": "API Key de Gemini actualizada exitosamente",
+        "status": "valid",
+        "updated_at": "2024-12-12T10:30:00Z"
+    }
+    ```
+    
+    **Errores:**
+    - 400: API Key inválida (no pasa validación de Google)
+    - 403: Sin permisos para modificar la API Key de este usuario
+    - 404: Usuario no encontrado
+    - 500: Error al guardar la API Key
+    """
+    # Control de acceso: Solo el propio usuario o Admin pueden actualizar
+    if usuario_id != current_user.id_usuario and current_user.rol != ROLE_ADMIN:
+        logger.warning(f"Usuario {current_user.id_usuario} intentó modificar API Key del usuario {usuario_id}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permiso para modificar esta API Key"
+        )
+    
+    # Buscar el usuario en la base de datos
+    usuario = db.query(SysUsuario).filter(
+        SysUsuario.id_usuario == usuario_id
+    ).first()
+    
+    if not usuario:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado"
+        )
+    
+    # PASO CRÍTICO: Validar API Key contra la API de Gemini ANTES de guardar
+    # Esto evita almacenar keys incorrectas o expiradas
+    logger.info(f"Validando API Key de Gemini para usuario {usuario_id} (key empieza con: {data.api_key[:10]}...)")
+    is_valid, validation_message = await validate_gemini_api_key(data.api_key)
+    
+    if not is_valid:
+        logger.warning(f"API Key inválida para usuario {usuario_id}: {validation_message}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"API Key inválida: {validation_message}"
+        )
+    
+    # API Key válida: encriptar y guardar
+    try:
+        # Encriptar la API Key con Fernet
+        encrypted_key = encrypt_api_key(data.api_key)
+        
+        # Actualizar los campos en el modelo
+        usuario.gemini_api_key_encrypted = encrypted_key
+        usuario.gemini_api_key_updated_at = sql_func.now()  # Timestamp de actualización
+        usuario.gemini_api_key_last_validated = sql_func.now()  # Timestamp de validación
+        
+        # Guardar en la base de datos
+        db.commit()
+        
+        logger.info(f"✓ API Key de Gemini actualizada exitosamente para usuario {usuario_id}")
+        
+        return {
+            "message": "API Key de Gemini actualizada exitosamente",
+            "status": "valid",
+            "updated_at": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"✗ Error guardando API Key encriptada para usuario {usuario_id}: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al guardar la API Key"
+        )
+
+
+# =============================================================================
+# ENDPOINT: DELETE /usuarios/{id}/gemini-key
+# Elimina la API Key de Gemini del usuario
+# =============================================================================
+
+@router.delete("/{usuario_id}/gemini-key")
+async def delete_gemini_key(
+    usuario_id: int,
+    current_user: SysUsuario = Depends(get_current_active_user),
+    db: Session = Depends(get_auth_db)
+):
+    """
+    Elimina la API Key de Gemini del usuario.
+    
+    Este endpoint realiza un "borrado suave" estableciendo los campos
+    de API Key a NULL. No se elimina el usuario, solo su API Key.
+    
+    **Casos de uso:**
+    - Usuario quiere revocar el acceso del sistema a su API Key
+    - Usuario quiere cambiar a una cuenta de Google diferente
+    - Admin necesita forzar reconfiguración por seguridad
+    
+    **Permisos:** 
+    - Un usuario puede eliminar su propia API Key
+    - Admin puede eliminar la API Key de cualquier usuario
+    
+    **Respuesta exitosa (200):**
+    ```json
+    {
+        "message": "API Key de Gemini eliminada exitosamente"
+    }
+    ```
+    
+    **Errores:**
+    - 403: Sin permisos para eliminar la API Key de este usuario
+    - 404: Usuario no encontrado o no tiene API Key configurada
+    """
+    # Control de acceso: Solo el propio usuario o Admin pueden eliminar
+    if usuario_id != current_user.id_usuario and current_user.rol != ROLE_ADMIN:
+        logger.warning(f"Usuario {current_user.id_usuario} intentó eliminar API Key del usuario {usuario_id}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permiso para eliminar esta API Key"
+        )
+    
+    # Buscar el usuario en la base de datos
+    usuario = db.query(SysUsuario).filter(
+        SysUsuario.id_usuario == usuario_id
+    ).first()
+    
+    if not usuario:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado"
+        )
+    
+    # Verificar que el usuario tenga una API Key configurada
+    if not usuario.gemini_api_key_encrypted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Este usuario no tiene API Key configurada"
+        )
+    
+    # Eliminar la API Key (borrado suave: establecer campos a NULL)
+    usuario.gemini_api_key_encrypted = None
+    usuario.gemini_api_key_updated_at = None
+    usuario.gemini_api_key_last_validated = None
+    
+    db.commit()
+    
+    logger.info(f"✓ API Key de Gemini eliminada para usuario {usuario_id}")
+    
+    return {
+        "message": "API Key de Gemini eliminada exitosamente"
+    }
