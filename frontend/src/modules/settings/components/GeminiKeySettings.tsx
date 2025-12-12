@@ -9,9 +9,13 @@ import { useState, useEffect } from 'react'
 import { Eye, EyeSlash, Check, X, Info } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { useAuthStore } from '../../auth/stores/authStore'
+import { UserWithSettings } from '../types/settings.types'
 import axios from 'axios'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'
+
+// Constantes de validación
+const MIN_API_KEY_LENGTH = 20
 
 export const GeminiKeySettings = () => {
   const { user, token } = useAuthStore()
@@ -23,10 +27,11 @@ export const GeminiKeySettings = () => {
 
   useEffect(() => {
     // Verificar si el usuario tiene API Key configurada
-    // Nota: Estos campos deben ser agregados al tipo User en el backend
+    // Usando type assertion segura con tipo extendido
     if (user) {
-      setHasKey((user as any).has_gemini_key || false)
-      setKeyStatus((user as any).gemini_key_status || null)
+      const userWithSettings = user as UserWithSettings
+      setHasKey(userWithSettings.has_gemini_key || false)
+      setKeyStatus(userWithSettings.gemini_key_status || null)
     }
   }, [user])
 
@@ -40,8 +45,8 @@ export const GeminiKeySettings = () => {
       return
     }
 
-    if (apiKey.length < 20) {
-      toast.error('La API Key parece ser demasiado corta')
+    if (apiKey.length < MIN_API_KEY_LENGTH) {
+      toast.error(`La API Key debe tener al menos ${MIN_API_KEY_LENGTH} caracteres`)
       return
     }
 

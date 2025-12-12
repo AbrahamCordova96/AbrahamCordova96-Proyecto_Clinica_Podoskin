@@ -152,13 +152,15 @@ export class NavigationHandler {
     // TODO: Integrar con sistema de modales
     // Ejemplo con Zustand: useModalStore.getState().openModal(modalName, command.prefill)
     
-    toast.info(`Abriendo formulario: ${command.modal}`)
+    toast.info(`📝 Preparando formulario: ${command.modal}\n(Integración con modales pendiente)`, {
+      duration: 4000
+    })
 
     return {
       success: true,
       modal: command.modal,
       prefill: command.prefill,
-      note: 'Integración con sistema de modales pendiente'
+      note: 'Integración con sistema de modales pendiente. Por ahora, navega manualmente a la sección correspondiente.'
     }
   }
 

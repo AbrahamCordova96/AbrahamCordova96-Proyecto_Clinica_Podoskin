@@ -153,9 +153,20 @@ export class BackendIntegration {
     const mapping = functionMap[functionName]
     
     if (!mapping) {
-      console.warn(`Función ${functionName} no mapeada. Usando backend chat.`)
-      // Fallback: enviar al backend como mensaje de texto
-      return await this.sendMessageToBackend(`Ejecuta: ${functionName} con ${JSON.stringify(args)}`)
+      console.warn(`Función ${functionName} no mapeada en el frontend.`)
+      
+      // Fallback: enviar al backend como mensaje para que lo procese
+      // El backend puede tener más funciones disponibles
+      try {
+        return await this.sendMessageToBackend(
+          `Ejecutar función: ${functionName} con parámetros ${JSON.stringify(args)}`
+        )
+      } catch (error) {
+        return {
+          error: true,
+          message: `Función ${functionName} no disponible en este momento`
+        }
+      }
     }
 
     try {
