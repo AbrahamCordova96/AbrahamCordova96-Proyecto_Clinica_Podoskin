@@ -187,6 +187,289 @@ async def chat_capabilities():
     }
 
 
+# ============================================================================
+# CATÁLOGO DE COMANDOS DISPONIBLES PARA EL CHATBOT
+# ============================================================================
+# Este catálogo permite al frontend saber qué comandos puede ejecutar el chatbot.
+# Cada comando tiene:
+# - id: Identificador único del comando
+# - name: Nombre descriptivo para mostrar al usuario
+# - description: Descripción de qué hace el comando
+# - category: Categoría para organizar (Pacientes, Citas, Tratamientos, etc.)
+# - examples: Ejemplos de cómo el usuario puede invocar el comando
+# - backend_function: Nombre de la función en el backend que ejecuta el comando
+# - endpoint: Endpoint de la API REST asociado
+# - method: Método HTTP (GET, POST, PUT, DELETE)
+# - params: Parámetros que acepta el comando
+# - required_role: Roles que tienen permiso para ejecutar el comando
+# - response_format: Tipo de respuesta (list, object, etc.)
+
+COMMAND_CATALOG = [
+    {
+        "id": "list_appointments_today",
+        "name": "Listar citas de hoy",
+        "description": "Obtiene todas las citas programadas para el día actual",
+        "category": "Citas",
+        "examples": [
+            "Citas de hoy",
+            "¿Qué citas tengo hoy?",
+            "Muéstrame la agenda de hoy",
+            "¿Cuántas citas hay hoy?"
+        ],
+        "backend_function": "get_todays_appointments",
+        "endpoint": "/citas",
+        "method": "GET",
+        "params": {"fecha_inicio": "{today}", "fecha_fin": "{today}"},
+        "required_role": ["Admin", "Podologo", "Recepcion"],
+        "response_format": "list"
+    },
+    {
+        "id": "search_patient",
+        "name": "Buscar paciente",
+        "description": "Busca pacientes por nombre, apellido o teléfono usando búsqueda difusa",
+        "category": "Pacientes",
+        "examples": [
+            "Busca al paciente Juan",
+            "Encuentra a María García",
+            "¿Quién es el paciente con teléfono 555-1234?",
+            "Pacientes con apellido López"
+        ],
+        "backend_function": "search_patient",
+        "endpoint": "/pacientes",
+        "method": "GET",
+        "params": {"busqueda": "{query}"},
+        "required_role": ["Admin", "Podologo"],
+        "response_format": "list"
+    },
+    {
+        "id": "get_active_treatments",
+        "name": "Listar tratamientos activos",
+        "description": "Obtiene la lista de todos los tratamientos en estado activo",
+        "category": "Tratamientos",
+        "examples": [
+            "Tratamientos activos",
+            "¿Qué tratamientos están en curso?",
+            "Muéstrame los tratamientos abiertos",
+            "Lista de tratamientos sin terminar"
+        ],
+        "backend_function": "get_active_treatments",
+        "endpoint": "/tratamientos",
+        "method": "GET",
+        "params": {"estado": "activo"},
+        "required_role": ["Admin", "Podologo"],
+        "response_format": "list"
+    },
+    {
+        "id": "create_patient",
+        "name": "Crear nuevo paciente",
+        "description": "Registra un nuevo paciente en el sistema con sus datos personales",
+        "category": "Pacientes",
+        "examples": [
+            "Crea un paciente llamado Juan Pérez",
+            "Registra un nuevo paciente",
+            "Quiero dar de alta un paciente",
+            "Agrega al paciente María López con teléfono 555-1234"
+        ],
+        "backend_function": "create_patient",
+        "endpoint": "/pacientes",
+        "method": "POST",
+        "body_schema": {
+            "nombres": {"type": "string", "required": True},
+            "apellidos": {"type": "string", "required": True},
+            "telefono": {"type": "string", "required": True},
+            "email": {"type": "string", "required": False},
+            "fecha_nacimiento": {"type": "date", "required": False}
+        },
+        "required_role": ["Admin", "Podologo"],
+        "response_format": "object"
+    },
+    {
+        "id": "schedule_appointment",
+        "name": "Agendar cita",
+        "description": "Programa una nueva cita para un paciente con un podólogo",
+        "category": "Citas",
+        "examples": [
+            "Agenda una cita",
+            "Quiero agendar una cita para mañana",
+            "Programa una consulta",
+            "Crea una cita para el paciente 123 con el doctor 5"
+        ],
+        "backend_function": "schedule_appointment",
+        "endpoint": "/citas",
+        "method": "POST",
+        "body_schema": {
+            "paciente_id": {"type": "number", "required": True},
+            "podologo_id": {"type": "number", "required": True},
+            "fecha_hora": {"type": "datetime", "required": True},
+            "motivo": {"type": "string", "required": False}
+        },
+        "required_role": ["Admin", "Podologo", "Recepcion"],
+        "response_format": "object"
+    },
+    {
+        "id": "list_services",
+        "name": "Listar servicios",
+        "description": "Obtiene el catálogo completo de servicios podológicos disponibles",
+        "category": "Servicios",
+        "examples": [
+            "¿Qué servicios ofrecen?",
+            "Lista de servicios",
+            "Muéstrame los servicios disponibles",
+            "Catálogo de servicios"
+        ],
+        "backend_function": "get_services",
+        "endpoint": "/servicios",
+        "method": "GET",
+        "params": {},
+        "required_role": ["Admin", "Podologo", "Recepcion"],
+        "response_format": "list"
+    },
+    {
+        "id": "get_patient_history",
+        "name": "Ver historial de paciente",
+        "description": "Obtiene el historial clínico completo de un paciente incluyendo tratamientos y evoluciones",
+        "category": "Pacientes",
+        "examples": [
+            "Historial del paciente 123",
+            "Muéstrame el expediente de Juan",
+            "¿Qué tratamientos ha tenido el paciente?",
+            "Evoluciones del paciente 45"
+        ],
+        "backend_function": "get_patient_history",
+        "endpoint": "/pacientes/{id}/historial",
+        "method": "GET",
+        "params": {"paciente_id": "{id}"},
+        "required_role": ["Admin", "Podologo"],
+        "response_format": "object"
+    },
+    {
+        "id": "get_financial_summary",
+        "name": "Resumen financiero",
+        "description": "Obtiene un resumen de ingresos, gastos y ganancias en un período",
+        "category": "Finanzas",
+        "examples": [
+            "Resumen financiero de hoy",
+            "¿Cuánto ganamos esta semana?",
+            "Ingresos y gastos del mes",
+            "Balance financiero"
+        ],
+        "backend_function": "get_financial_summary",
+        "endpoint": "/finanzas/resumen",
+        "method": "GET",
+        "params": {"fecha_inicio": "{start}", "fecha_fin": "{end}"},
+        "required_role": ["Admin"],
+        "response_format": "object"
+    }
+]
+
+
+@router.get("/commands", summary="Catálogo de comandos disponibles")
+async def get_command_catalog(
+    current_user: SysUsuario = Depends(get_current_active_user)
+):
+    """
+    Devuelve el catálogo completo de comandos disponibles para el chatbot.
+    
+    Este endpoint es fundamental para que el frontend sepa:
+    - Qué comandos puede ejecutar el usuario según su rol
+    - Cómo se mapean las consultas en lenguaje natural a endpoints del backend
+    - Qué ejemplos mostrar al usuario para guiarlo
+    
+    **Filtrado por rol:**
+    Los comandos se filtran automáticamente según el rol del usuario autenticado.
+    Por ejemplo:
+    - Admin: Ve todos los comandos (8)
+    - Podologo: Ve comandos clínicos pero no financieros (7)
+    - Recepcion: Solo ve comandos de agenda y contacto (3)
+    
+    **Uso típico:**
+    1. Frontend llama este endpoint al iniciar el chat
+    2. Guarda el catálogo en el estado local
+    3. Cuando el usuario escribe, usa los examples para autocompletar
+    4. Cuando Gemini genera un function call, mapea a estos comandos
+    
+    **Respuesta:**
+    ```json
+    {
+        "total": 7,
+        "commands": [
+            {
+                "id": "list_appointments_today",
+                "name": "Listar citas de hoy",
+                "description": "Obtiene todas las citas...",
+                "examples": ["Citas de hoy", "¿Qué citas..."],
+                ...
+            },
+            ...
+        ],
+        "user_role": "Podologo",
+        "user_id": 5
+    }
+    ```
+    """
+    # Filtrar comandos según el rol del usuario
+    # Solo muestra los comandos donde el rol del usuario está en required_role
+    available_commands = [
+        cmd for cmd in COMMAND_CATALOG
+        if current_user.rol in cmd["required_role"]
+    ]
+    
+    logger.info(f"Usuario {current_user.nombre_usuario} ({current_user.rol}) tiene acceso a {len(available_commands)} comandos")
+    
+    return {
+        "total": len(available_commands),
+        "commands": available_commands,
+        "user_role": current_user.rol,
+        "user_id": current_user.id_usuario
+    }
+
+
+@router.get("/commands/{command_id}", summary="Detalle de un comando específico")
+async def get_command_detail(
+    command_id: str,
+    current_user: SysUsuario = Depends(get_current_active_user)
+):
+    """
+    Obtiene el detalle completo de un comando específico.
+    
+    Este endpoint permite al frontend obtener información detallada
+    sobre un comando particular, incluyendo todos sus parámetros y ejemplos.
+    
+    **Uso típico:**
+    - Usuario hace clic en un comando sugerido
+    - Frontend llama este endpoint para mostrar detalles y ejemplos
+    - Usuario puede ver exactamente cómo usar el comando
+    
+    **Parámetros:**
+    - command_id: ID del comando (ej: "list_appointments_today")
+    
+    **Errores:**
+    - 404: Comando no encontrado
+    - 403: Usuario no tiene permiso para este comando
+    """
+    # Buscar el comando en el catálogo
+    command = next(
+        (cmd for cmd in COMMAND_CATALOG if cmd["id"] == command_id),
+        None
+    )
+    
+    if not command:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Comando '{command_id}' no encontrado en el catálogo"
+        )
+    
+    # Verificar que el usuario tenga permisos para este comando
+    if current_user.rol not in command["required_role"]:
+        logger.warning(f"Usuario {current_user.nombre_usuario} intentó acceder al comando '{command_id}' sin permisos")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"No tienes permiso para usar el comando '{command['name']}'"
+        )
+    
+    return command
+
+
 def get_router():
     """Función para obtener el router (compatibilidad)."""
     return router
