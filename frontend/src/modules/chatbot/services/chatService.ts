@@ -1,21 +1,45 @@
 // ============================================================================
-// SERVICIO DEL CHATBOT CON GEMINI LIVE Y FUNCTION CALLING
+// SERVICIO DEL CHATBOT CON BACKEND REAL Y GEMINI LIVE
 // ============================================================================
 
 import { chatServiceMock } from './chatService.mock'
 import { geminiLiveService } from './geminiLiveService'
 import { voiceService } from './voiceService'
+import { backendIntegration } from './backendIntegration'
 
 export const chatServiceReal = {
   /**
    * Enviar mensaje de texto
+   * PRIORIDAD: Usa el backend real para procesamiento de mensajes
+   * El backend maneja Gemini internamente con las API Keys del usuario
    */
   sendMessage: async (message: string): Promise<string> => {
     try {
+      // OPCIÓN A: Usar solo backend (IMPLEMENTADO - RECOMENDADO)
+      const response = await backendIntegration.sendMessageToBackend(message)
+      return response.message
+
+      // OPCIÓN B: Usar Gemini directo + ejecutar function calls contra backend
+      // (Descomentado si se prefiere usar Gemini desde frontend)
+      /*
       const response = await geminiLiveService.sendTextMessage(message)
+      
+      // Si Gemini devuelve un function call, ejecutarlo contra el backend
+      if (response.startsWith('[FUNCTION_CALL]')) {
+        const functionCallData = JSON.parse(response.replace('[FUNCTION_CALL]', ''))
+        const result = await backendIntegration.executeFunctionCall(
+          functionCallData.name,
+          functionCallData.args
+        )
+        
+        // Enviar resultado a Gemini para que lo formatee en lenguaje natural
+        return await geminiLiveService.sendFunctionResult(functionCallData.name, result)
+      }
+      
       return response
+      */
     } catch (error) {
-      console.error('Error calling Gemini Live:', error)
+      console.error('Error calling chat service:', error)
       throw error
     }
   },
@@ -39,32 +63,14 @@ export const chatServiceReal = {
   },
 
   /**
-   * Ejecutar una función llamada por Gemini
+   * Ejecutar una función llamada por Gemini o el backend
+   * Ahora usa el backend real en lugar de datos mock
    */
   executeFunctionCall: async (functionName: string, args: Record<string, any>): Promise<any> => {
-    // Aquí se integrarían las llamadas reales a los servicios del backend
-    // Por ahora, retornamos mock data
-    console.log(`Executing function: ${functionName}`, args)
+    console.log(`Ejecutando función: ${functionName}`, args)
     
-    switch (functionName) {
-      case 'get_todays_appointments':
-        return { count: 5, appointments: [] }
-      
-      case 'search_patient':
-        return { results: [], message: 'Búsqueda simulada' }
-      
-      case 'get_active_treatments':
-        return { count: 3, treatments: [] }
-      
-      case 'create_patient':
-        return { success: true, patient_id: 123, message: 'Paciente creado (simulación)' }
-      
-      case 'schedule_appointment':
-        return { success: true, appointment_id: 456, message: 'Cita agendada (simulación)' }
-      
-      default:
-        return { error: 'Función no implementada' }
-    }
+    // Usar backend real para ejecutar las funciones
+    return await backendIntegration.executeFunctionCall(functionName, args)
   },
 
   /**

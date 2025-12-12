@@ -1,13 +1,16 @@
 // ============================================================================
-// STORE DEL CHATBOT CON SOPORTE DE VOZ
+// STORE DEL CHATBOT CON SOPORTE DE VOZ Y BACKEND REAL
 // ============================================================================
 
 import { create } from 'zustand'
 import { ChatMessage, ChatState } from '../types/chat.types'
 import { chatService } from '../services/chatService'
 import { voiceService } from '../services/voiceService'
+import { useAuthStore } from '../../auth/stores/authStore'
+import { backendIntegration } from '../services/backendIntegration'
 
 interface ChatActions {
+  initializeChat: () => void
   toggleChat: () => void
   sendMessage: (content: string) => Promise<void>
   sendVoiceMessage: (audioBlob: Blob) => Promise<void>
@@ -28,7 +31,36 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   isSpeaking: false,
   voiceOutputEnabled: true,
   
-  toggleChat: () => set(state => ({ isOpen: !state.isOpen })),
+  /**
+   * Inicializar el chat con token y thread_id
+   * Se llama automáticamente al abrir el chatbot
+   */
+  initializeChat: () => {
+    const authStore = useAuthStore.getState()
+    const user = authStore.user
+    const token = authStore.token
+    
+    if (user && token) {
+      // Configurar token para autenticación con backend
+      backendIntegration.setToken(token)
+      
+      // Generar y configurar thread_id único para esta sesión
+      const threadId = backendIntegration.generateThreadId(user.id_usuario)
+      backendIntegration.setThreadId(threadId)
+      
+      console.log('Chat inicializado con thread_id:', threadId)
+    } else {
+      console.warn('No se pudo inicializar el chat: usuario o token no disponible')
+    }
+  },
+  
+  toggleChat: () => set(state => {
+    // Si se está abriendo el chat, inicializar
+    if (!state.isOpen) {
+      get().initializeChat()
+    }
+    return { isOpen: !state.isOpen }
+  }),
   
   toggleVoiceOutput: () => set(state => ({ voiceOutputEnabled: !state.voiceOutputEnabled })),
   
