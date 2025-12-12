@@ -46,11 +46,17 @@ try:
     _cipher = Fernet(settings.ENCRYPTION_KEY.encode())
     logger.info("✓ Cipher de encriptación inicializado correctamente")
 except Exception as e:
-    logger.error(f"✗ Error inicializando cipher de encriptación: {e}")
-    logger.warning("⚠ USANDO CLAVE DE ENCRIPTACIÓN DE DESARROLLO - NO USAR EN PRODUCCIÓN")
-    # Fallback a una clave de desarrollo (solo para testing local)
-    # En producción, esto debería fallar y no permitir iniciar la aplicación
-    _cipher = Fernet(Fernet.generate_key())
+    logger.critical(f"✗ ERROR CRÍTICO: No se pudo inicializar el cipher de encriptación: {e}")
+    logger.critical("⚠ ENCRYPTION_KEY no está configurada correctamente en .env")
+    logger.critical("⚠ Generar una clave con: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\"")
+    logger.critical("⚠ La aplicación no puede continuar sin una clave de encriptación válida")
+    # En producción, la aplicación DEBE fallar aquí
+    # NO usar una clave aleatoria porque haría irrecuperables las API Keys existentes
+    raise RuntimeError(
+        "ENCRYPTION_KEY no configurada o inválida. "
+        "La aplicación no puede iniciar sin una clave de encriptación válida. "
+        "Ver logs arriba para instrucciones."
+    )
 
 
 def encrypt_api_key(plain_key: str) -> str:

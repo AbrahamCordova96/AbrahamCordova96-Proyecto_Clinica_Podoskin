@@ -6,6 +6,11 @@
 --              de Google Gemini de forma segura (encriptada con Fernet)
 
 -- Agregar las tres columnas nuevas al modelo SysUsuario
+-- NOTA sobre VARCHAR(500):
+-- - Fernet tokens para una API Key de ~40 caracteres generan ~180 caracteres encriptados
+-- - Se usa VARCHAR(500) para tener margen de seguridad (2.7x el tamaño esperado)
+-- - Esto permite API Keys más largas en el futuro sin necesidad de migración
+-- - Alternativa: usar TEXT si se prefiere sin límite de tamaño
 ALTER TABLE auth.sys_usuarios
 ADD COLUMN IF NOT EXISTS gemini_api_key_encrypted VARCHAR(500),
 ADD COLUMN IF NOT EXISTS gemini_api_key_updated_at TIMESTAMPTZ,

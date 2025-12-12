@@ -80,7 +80,11 @@ async def validate_gemini_api_key(api_key: str) -> Tuple[bool, str]:
         async with httpx.AsyncClient(timeout=10.0) as client:
             
             # Hacer petición GET al endpoint de listado de modelos
-            # La API Key se pasa como query parameter
+            # NOTA DE SEGURIDAD: La API Key se pasa como query parameter porque
+            # así lo requiere la API de Google Gemini. En un mundo ideal, se usaría
+            # un header de autenticación, pero debemos seguir el diseño de Google.
+            # Riesgo: La API Key puede quedar en logs del servidor web o proxies.
+            # Mitigación: Esta validación solo se hace al configurar la key, no en cada uso.
             logger.info(f"Validando API Key de Gemini (empieza con: {api_key[:10]}...)")
             response = await client.get(
                 f"{GEMINI_API_URL}?key={api_key}"

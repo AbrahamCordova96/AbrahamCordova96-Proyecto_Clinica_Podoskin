@@ -13,11 +13,10 @@
 # =============================================================================
 
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from sqlalchemy.sql import func as sql_func
 from pydantic import BaseModel, Field, EmailStr
 
 from backend.api.deps.database import get_auth_db
@@ -400,6 +399,9 @@ async def get_gemini_key_status(
     has_key = bool(usuario.gemini_api_key_encrypted)
     
     # Si tiene key, verificar si es válida haciendo una llamada a la API de Google
+    # NOTA: Esto valida en cada llamada, lo cual puede causar rate limiting si se
+    # llama frecuentemente. En producción, considerar cachear el resultado por ~1 hora.
+    # Ejemplo: usar Redis o una variable de caché en memoria con TTL.
     is_valid = None
     if has_key:
         try:
@@ -512,8 +514,10 @@ async def update_gemini_key(
         
         # Actualizar los campos en el modelo
         usuario.gemini_api_key_encrypted = encrypted_key
-        usuario.gemini_api_key_updated_at = sql_func.now()  # Timestamp de actualización
-        usuario.gemini_api_key_last_validated = sql_func.now()  # Timestamp de validación
+        # Usar datetime.now(timezone.utc) en lugar de sql_func.now() para consistencia
+        # con el resto de la aplicación y mejor control en Python
+        usuario.gemini_api_key_updated_at = datetime.now(timezone.utc)
+        usuario.gemini_api_key_last_validated = datetime.now(timezone.utc)
         
         # Guardar en la base de datos
         db.commit()
