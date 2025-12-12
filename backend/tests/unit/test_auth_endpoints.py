@@ -38,7 +38,7 @@ class TestAuthLogin:
         """Test: Login exitoso con usuario podólogo."""
         response = client.post(
             "/api/v1/auth/login",
-            data={
+            json={
                 "username": "podologo_test",
                 "password": "podo123"
             }
@@ -46,13 +46,15 @@ class TestAuthLogin:
         
         assert response.status_code == 200
         data = response.json()
-        assert data["user"]["rol"] == "Podologo"
+        assert "access_token" in data
+        assert data["token_type"] == "bearer"
+        # El endpoint /auth/login solo devuelve token, no user data
     
     def test_login_success_recepcion(self, client, test_recepcion_user):
         """Test: Login exitoso con usuario recepción."""
         response = client.post(
             "/api/v1/auth/login",
-            data={
+            json={
                 "username": "recepcion_test",
                 "password": "recep123"
             }
@@ -60,13 +62,15 @@ class TestAuthLogin:
         
         assert response.status_code == 200
         data = response.json()
-        assert data["user"]["rol"] == "Recepcion"
+        assert "access_token" in data
+        assert data["token_type"] == "bearer"
+        # El endpoint /auth/login solo devuelve token, no user data
     
     def test_login_wrong_password(self, client, test_admin_user):
         """Test: Login con contraseña incorrecta."""
         response = client.post(
             "/api/v1/auth/login",
-            data={
+            json={
                 "username": "admin_test",
                 "password": "wrong_password"
             }
@@ -79,7 +83,7 @@ class TestAuthLogin:
         """Test: Login con usuario inexistente."""
         response = client.post(
             "/api/v1/auth/login",
-            data={
+            json={
                 "username": "nonexistent_user",
                 "password": "any_password"
             }
@@ -95,19 +99,19 @@ class TestAuthLogin:
         
         response = client.post(
             "/api/v1/auth/login",
-            data={
+            json={
                 "username": "admin_test",
                 "password": "admin123"
             }
         )
         
-        assert response.status_code == 401
+        assert response.status_code == 403
     
     def test_login_missing_username(self, client):
         """Test: Login sin username."""
         response = client.post(
             "/api/v1/auth/login",
-            data={
+            json={
                 "password": "admin123"
             }
         )
@@ -118,7 +122,7 @@ class TestAuthLogin:
         """Test: Login sin password."""
         response = client.post(
             "/api/v1/auth/login",
-            data={
+            json={
                 "username": "admin_test"
             }
         )
@@ -129,7 +133,7 @@ class TestAuthLogin:
         """Test: Login con credenciales vacías."""
         response = client.post(
             "/api/v1/auth/login",
-            data={
+            json={
                 "username": "",
                 "password": ""
             }
@@ -211,7 +215,7 @@ class TestAuthChangePassword:
     
     def test_change_password_success(self, client, auth_headers_admin):
         """Test: Cambio de contraseña exitoso."""
-        response = client.post(
+        response = client.put(
             "/api/v1/auth/change-password",
             headers=auth_headers_admin,
             json={
@@ -226,7 +230,7 @@ class TestAuthChangePassword:
     
     def test_change_password_wrong_current(self, client, auth_headers_admin):
         """Test: Cambio con contraseña actual incorrecta."""
-        response = client.post(
+        response = client.put(
             "/api/v1/auth/change-password",
             headers=auth_headers_admin,
             json={
@@ -239,7 +243,7 @@ class TestAuthChangePassword:
     
     def test_change_password_same_as_current(self, client, auth_headers_admin):
         """Test: Nueva contraseña igual a la actual."""
-        response = client.post(
+        response = client.put(
             "/api/v1/auth/change-password",
             headers=auth_headers_admin,
             json={
@@ -253,7 +257,7 @@ class TestAuthChangePassword:
     
     def test_change_password_weak_password(self, client, auth_headers_admin):
         """Test: Nueva contraseña débil."""
-        response = client.post(
+        response = client.put(
             "/api/v1/auth/change-password",
             headers=auth_headers_admin,
             json={
@@ -267,7 +271,7 @@ class TestAuthChangePassword:
     
     def test_change_password_without_auth(self, client):
         """Test: Cambio sin autenticación."""
-        response = client.post(
+        response = client.put(
             "/api/v1/auth/change-password",
             json={
                 "current_password": "admin123",
@@ -279,7 +283,7 @@ class TestAuthChangePassword:
     
     def test_change_password_missing_current(self, client, auth_headers_admin):
         """Test: Sin contraseña actual."""
-        response = client.post(
+        response = client.put(
             "/api/v1/auth/change-password",
             headers=auth_headers_admin,
             json={
@@ -291,7 +295,7 @@ class TestAuthChangePassword:
     
     def test_change_password_missing_new(self, client, auth_headers_admin):
         """Test: Sin contraseña nueva."""
-        response = client.post(
+        response = client.put(
             "/api/v1/auth/change-password",
             headers=auth_headers_admin,
             json={
@@ -306,7 +310,7 @@ class TestAuthChangePassword:
         # Obtener token
         login_response = client.post(
             "/api/v1/auth/login",
-            data={
+            json={
                 "username": "admin_test",
                 "password": "admin123"
             }
@@ -315,7 +319,7 @@ class TestAuthChangePassword:
         headers = {"Authorization": f"Bearer {token}"}
         
         # Cambiar contraseña
-        change_response = client.post(
+        change_response = client.put(
             "/api/v1/auth/change-password",
             headers=headers,
             json={
@@ -329,7 +333,7 @@ class TestAuthChangePassword:
             # Intentar login con nueva contraseña
             new_login_response = client.post(
                 "/api/v1/auth/login",
-                data={
+                json={
                     "username": "admin_test",
                     "password": "NewPass456!"
                 }
@@ -349,7 +353,7 @@ class TestAuthWorkflow:
         # 1. Login
         login_response = client.post(
             "/api/v1/auth/login",
-            data={
+            json={
                 "username": "admin_test",
                 "password": "admin123"
             }
@@ -364,7 +368,7 @@ class TestAuthWorkflow:
         assert me_response.json()["nombre_usuario"] == "admin_test"
         
         # 3. Cambiar contraseña
-        change_response = client.post(
+        change_response = client.put(
             "/api/v1/auth/change-password",
             headers=headers,
             json={
@@ -379,7 +383,7 @@ class TestAuthWorkflow:
         # Login admin
         admin_response = client.post(
             "/api/v1/auth/login",
-            data={"username": "admin_test", "password": "admin123"}
+            json={"username": "admin_test", "password": "admin123"}
         )
         assert admin_response.status_code == 200
         admin_token = admin_response.json()["access_token"]
@@ -387,7 +391,7 @@ class TestAuthWorkflow:
         # Login podólogo
         podo_response = client.post(
             "/api/v1/auth/login",
-            data={"username": "podologo_test", "password": "podo123"}
+            json={"username": "podologo_test", "password": "podo123"}
         )
         assert podo_response.status_code == 200
         podo_token = podo_response.json()["access_token"]

@@ -319,19 +319,34 @@ def test_recepcion_user(auth_db, test_clinica) -> SysUsuario:
 @pytest.fixture
 def admin_token(test_admin_user) -> str:
     """Token JWT de administrador."""
-    return create_access_token(data={"sub": test_admin_user.nombre_usuario})
+    return create_access_token(data={
+        "user_id": test_admin_user.id_usuario,
+        "username": test_admin_user.nombre_usuario,
+        "rol": test_admin_user.rol,
+        "clinica_id": test_admin_user.clinica_id
+    })
 
 
 @pytest.fixture
 def podologo_token(test_podologo_user) -> str:
     """Token JWT de podólogo."""
-    return create_access_token(data={"sub": test_podologo_user.nombre_usuario})
+    return create_access_token(data={
+        "user_id": test_podologo_user.id_usuario,
+        "username": test_podologo_user.nombre_usuario,
+        "rol": test_podologo_user.rol,
+        "clinica_id": test_podologo_user.clinica_id
+    })
 
 
 @pytest.fixture
 def recepcion_token(test_recepcion_user) -> str:
     """Token JWT de recepcionista."""
-    return create_access_token(data={"sub": test_recepcion_user.nombre_usuario})
+    return create_access_token(data={
+        "user_id": test_recepcion_user.id_usuario,
+        "username": test_recepcion_user.nombre_usuario,
+        "rol": test_recepcion_user.rol,
+        "clinica_id": test_recepcion_user.clinica_id
+    })
 
 
 @pytest.fixture
