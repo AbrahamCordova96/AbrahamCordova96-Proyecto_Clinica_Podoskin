@@ -72,11 +72,11 @@ export const chatServiceReal = {
     
     // ========== FUNCIONES DE NAVEGACIÓN (NO requieren backend) ==========
     if (functionName === 'navigate_to_page') {
-      return await navigationHandler.navigateToPage(args)
+      return await navigationHandler.navigateToPage(args as any)
     }
     
     if (functionName === 'open_modal') {
-      return await navigationHandler.openModal(args)
+      return await navigationHandler.openModal(args as any)
     }
     
     if (functionName === 'show_notification') {
