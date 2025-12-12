@@ -104,6 +104,18 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""  # Email password or app-specific password (configure in .env)
     FROM_EMAIL: str = "noreply@podoskin.com"
     
+    # ========== Encryption Configuration ==========
+    # Clave de encriptación para API Keys usando Fernet (symmetric encryption)
+    # IMPORTANTE: Esta clave DEBE generarse con el siguiente comando:
+    #   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+    # 
+    # En producción, esta clave debe:
+    # 1. Almacenarse en una variable de entorno (no hardcodear)
+    # 2. Mantenerse en secreto (nunca compartir o commitear al repositorio)
+    # 3. Rotarse periódicamente (cada 6-12 meses)
+    # 4. Tener backup seguro (si se pierde, las API Keys no se pueden recuperar)
+    ENCRYPTION_KEY: str = "TU_CLAVE_FERNET_AQUI_CAMBIAR_EN_PRODUCCION"
+    
     class Config:
         # Archivo .env - ruta absoluta calculada arriba
         env_file = str(_ENV_FILE)

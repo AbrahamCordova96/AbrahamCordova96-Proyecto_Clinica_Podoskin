@@ -20,6 +20,7 @@
 
 from datetime import datetime, timezone, timedelta
 from typing import Optional
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field, field_validator
@@ -33,9 +34,14 @@ from backend.api.core.security import create_access_token, Token
 from backend.api.core.config import get_settings
 from backend.schemas.auth.models import SysUsuario, AuditLog
 from backend.schemas.auth.auth_utils import verify_password, hash_password, needs_rehash
+from backend.api.core.encryption import decrypt_api_key
+from backend.api.services.gemini_validator import validate_gemini_api_key
 
 # Rate limiter for auth endpoints
 limiter = Limiter(key_func=get_remote_address)
+
+# Logger para registrar operaciones de autenticación
+logger = logging.getLogger(__name__)
 
 
 # =============================================================================
@@ -119,7 +125,7 @@ class ChangePasswordResponse(BaseModel):
 # ENDPOINT: POST /auth/login
 # =============================================================================
 
-@router.post("/login", response_model=Token)
+@router.post("/login")
 @limiter.limit("5/minute")  # Rate limit: 5 login attempts per minute per IP
 async def login(
     credentials: LoginRequest,
@@ -129,6 +135,9 @@ async def login(
     """
     Inicia sesión y obtiene un token JWT.
     
+    **NUEVO:** Ahora también verifica si el usuario tiene API Key de Gemini configurada
+    y retorna información adicional del usuario.
+    
     **Parámetros (JSON):**
     - username: Nombre de usuario (mínimo 3 caracteres)
     - password: Contraseña (mínimo 8 caracteres)
@@ -136,25 +145,40 @@ async def login(
     **Retorna:**
     - access_token: Token JWT para usar en requests posteriores
     - token_type: Siempre "bearer"
+    - user: Información del usuario incluyendo:
+      - id_usuario: ID único del usuario
+      - nombre_usuario: Nombre de usuario
+      - email: Email del usuario
+      - rol: Rol (Admin, Podologo, Recepcion)
+      - clinica_id: ID de la clínica asociada
+      - has_gemini_key: Si tiene API Key de Gemini configurada (NUEVO)
+      - gemini_key_status: Estado de la API Key ("valid", "invalid", "error", o null) (NUEVO)
     
     **Errores:**
     - 401: Credenciales inválidas
-    - 403: Usuario desactivado
+    - 403: Usuario desactivado o cuenta bloqueada
     
-    **Ejemplo de uso:**
+    **Ejemplo de respuesta:**
     ```json
-    POST /api/v1/auth/login
-    Content-Type: application/json
-    
     {
-        "username": "admin",
-        "password": "Admin2405"
+        "access_token": "eyJ0eXAi...",
+        "token_type": "bearer",
+        "user": {
+            "id_usuario": 1,
+            "nombre_usuario": "admin",
+            "email": "admin@podoskin.com",
+            "rol": "Admin",
+            "clinica_id": 1,
+            "has_gemini_key": true,
+            "gemini_key_status": "valid"
+        }
     }
     ```
     
     **Auditoría:**
     - Registra login exitoso en audit_log con IP y timestamp
     - Registra intentos fallidos para seguridad
+    - Valida API Key de Gemini si está configurada
     """
     # Extraer IP del cliente
     client_ip = request.client.host if request.client else None
@@ -227,7 +251,34 @@ async def login(
     
     db.commit()
     
-    # 9. Crear token JWT con datos del usuario
+    # 9. NUEVO: Verificar estado de API Key de Gemini
+    has_gemini_key = bool(user.gemini_api_key_encrypted)
+    gemini_key_status = None
+    
+    if has_gemini_key:
+        try:
+            # Desencriptar la API Key almacenada
+            decrypted_key = decrypt_api_key(user.gemini_api_key_encrypted)
+            # Validar contra la API de Google Gemini
+            is_valid, _ = await validate_gemini_api_key(decrypted_key)
+            
+            # Establecer el estado basado en la validación
+            gemini_key_status = "valid" if is_valid else "invalid"
+            
+            if is_valid:
+                # Si es válida, actualizar el timestamp de última validación
+                user.gemini_api_key_last_validated = datetime.now(timezone.utc)
+                db.commit()
+                logger.info(f"✓ API Key de Gemini validada exitosamente para usuario {user.id_usuario}")
+            else:
+                logger.warning(f"⚠ API Key de Gemini inválida para usuario {user.id_usuario}")
+                
+        except Exception as e:
+            # Si hay cualquier error al validar (desencriptación, red, etc)
+            logger.error(f"✗ Error validando API Key en login para usuario {user.id_usuario}: {e}")
+            gemini_key_status = "error"
+    
+    # 10. Crear token JWT con datos del usuario
     access_token = create_access_token(
         data={
             "user_id": user.id_usuario,
@@ -237,7 +288,21 @@ async def login(
         }
     )
     
-    return Token(access_token=access_token, token_type="bearer")
+    # 11. Retornar token y información completa del usuario (incluye estado de API Key)
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id_usuario": user.id_usuario,
+            "nombre_usuario": user.nombre_usuario,
+            "email": user.email,
+            "rol": user.rol,
+            "clinica_id": user.clinica_id,
+            # NUEVO: Información sobre API Key de Gemini
+            "has_gemini_key": has_gemini_key,
+            "gemini_key_status": gemini_key_status
+        }
+    }
 
 
 # =============================================================================
