@@ -9,13 +9,13 @@ export const auditService = {
   },
 
   // Obtener logs filtrados por usuario
-  getByUser: async (userId: number) => {
+  getByUser: async (userId) => {
     const response = await api.get(`/audit/usuario/${userId}`);
     return response.data;
   },
 
   // Obtener logs filtrados por entidad
-  getByEntity: async (entity: string, entityId?: number) => {
+  getByEntity: async (entity, entityId) => {
     const url = entityId 
       ? `/audit/entity/${entity}/${entityId}`
       : `/audit/entity/${entity}`;
