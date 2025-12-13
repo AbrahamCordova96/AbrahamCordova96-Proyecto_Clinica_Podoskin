@@ -15,6 +15,7 @@ import { toast } from 'sonner'
 import { usePacientesStore } from '../stores/pacientesStore'
 import { calculateAge } from '../utils/pacientes.utils'
 import { ESTADOS_MEXICO, getCURPValidationMessage } from '../constants/nom024-catalogos'
+import { imprimirExpediente } from '../utils/expediente-impresion'
 import type { Paciente, TratamientoEstado, TratamientoCreateInput, EvolucionCreateInput, PacienteCreateInput } from '../types/pacientes.types'
 
 export function HistorialPacientesView() {
@@ -277,93 +278,18 @@ export function HistorialPacientesView() {
     if (!selectedPaciente) return
     
     try {
-      // For now, open a new window with a simple HTML representation
-      // In the future, this should call: GET /api/v1/reportes/expediente/{id}/html
-      const printWindow = window.open('', '_blank')
-      if (!printWindow) {
-        toast.error('No se pudo abrir la ventana de impresión. Por favor, permite ventanas emergentes para este sitio en la configuración de tu navegador.')
-        return
-      }
-      
-      // Create a simple HTML document for printing
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>Expediente - ${selectedPaciente.nombres} ${selectedPaciente.apellidos}</title>
-            <style>
-              body { font-family: Arial, sans-serif; margin: 20px; }
-              h1 { color: #333; border-bottom: 2px solid #666; padding-bottom: 10px; }
-              h2 { color: #555; margin-top: 20px; }
-              .info-row { margin: 10px 0; }
-              .label { font-weight: bold; display: inline-block; width: 200px; }
-              table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-              th { background-color: #f2f2f2; }
-              @media print {
-                button { display: none; }
-              }
-            </style>
-          </head>
-          <body>
-            <h1>Expediente Clínico</h1>
-            <h2>Datos del Paciente</h2>
-            <div class="info-row"><span class="label">Nombre completo:</span> ${selectedPaciente.nombres} ${selectedPaciente.apellidos}</div>
-            <div class="info-row"><span class="label">Fecha de nacimiento:</span> ${new Date(selectedPaciente.fecha_nacimiento).toLocaleDateString('es')}</div>
-            <div class="info-row"><span class="label">Edad:</span> ${calculateAge(selectedPaciente.fecha_nacimiento)} años</div>
-            <div class="info-row"><span class="label">Sexo:</span> ${selectedPaciente.sexo}</div>
-            <div class="info-row"><span class="label">Teléfono:</span> ${selectedPaciente.telefono}</div>
-            <div class="info-row"><span class="label">Email:</span> ${selectedPaciente.email || 'No registrado'}</div>
-            <div class="info-row"><span class="label">Domicilio:</span> ${selectedPaciente.domicilio || 'No registrado'}</div>
-            ${selectedPaciente.curp ? `<div class="info-row"><span class="label">CURP:</span> ${selectedPaciente.curp}</div>` : ''}
-            
-            <h2>Tratamientos</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>Fecha Inicio</th>
-                  <th>Problema</th>
-                  <th>Estado</th>
-                  <th>Fecha Fin</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${pacienteTratamientos.map((t: any) => `
-                  <tr>
-                    <td>${new Date(t.fecha_inicio).toLocaleDateString('es')}</td>
-                    <td>${t.problema}</td>
-                    <td>${t.estado}</td>
-                    <td>${t.fecha_fin ? new Date(t.fecha_fin).toLocaleDateString('es') : '-'}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-            
-            <div style="margin-top: 40px; text-align: center;">
-              <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">
-                Imprimir
-              </button>
-            </div>
-            
-            <script>
-              // Trigger print dialog after window loads
-              window.addEventListener('load', function() {
-                setTimeout(function() {
-                  window.print();
-                }, 500);
-              });
-            </script>
-          </body>
-        </html>
-      `
-      
-      printWindow.document.write(htmlContent)
-      printWindow.document.close()
+      // Usar el nuevo componente de impresión mejorado con todos los campos NOM-024
+      imprimirExpediente({
+        paciente: selectedPaciente,
+        tratamientos: pacienteTratamientos,
+        evoluciones: evoluciones,
+        podologos: podologos
+      })
       
       toast.success('Expediente preparado para impresión')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al generar expediente:', error)
-      toast.error('Error al generar expediente para impresión')
+      toast.error(error.message || 'Error al generar expediente para impresión')
     }
   }
 
