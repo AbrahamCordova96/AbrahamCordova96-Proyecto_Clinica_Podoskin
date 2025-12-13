@@ -18,10 +18,10 @@
 # =============================================================================
 
 from typing import List, Optional
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, HTMLResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
 from pydantic import BaseModel, Field, EmailStr
@@ -38,6 +38,8 @@ from backend.api.deps.permissions import (
 from backend.schemas.auth.models import SysUsuario
 from backend.schemas.core.models import Paciente, HistorialMedicoGeneral, HistorialGineco, Tratamiento, EvolucionClinica
 from backend.api.utils.pdf_export import generate_patient_pdf
+from backend.api.utils.expediente_export import exportar_expediente_html
+from backend.utils.id_generator import generar_codigo_interno
 
 # Logger para operaciones importantes
 logger = logging.getLogger(__name__)
@@ -298,9 +300,6 @@ async def create_paciente(
     - Formato: [2 letras apellido][2 letras nombre]-[MMDD]-[contador]
     - Ejemplo: "RENO-1213-00001" para "Ornelas Reynoso, Santiago"
     """
-    from backend.utils.id_generator import generar_codigo_interno
-    from datetime import datetime
-    
     # Crear paciente
     paciente = Paciente(
         **data.model_dump(),
@@ -317,7 +316,7 @@ async def create_paciente(
         codigo = generar_codigo_interno(
             apellido_paterno=paciente.apellidos,
             nombre=paciente.nombres,
-            fecha_registro=datetime.now(),
+            fecha_registro=datetime.now(timezone.utc),
             model_class=Paciente,
             db=db
         )
@@ -619,9 +618,6 @@ async def print_expediente(
     - Imprimir para archivo físico
     - Convertir a PDF con navegador (Ctrl+P → Guardar como PDF)
     """
-    from backend.api.utils.expediente_export import exportar_expediente_html
-    from fastapi.responses import HTMLResponse
-    
     # Verificar que el paciente existe
     paciente = core_db.query(Paciente).filter_by(id_paciente=paciente_id).first()
     if not paciente:

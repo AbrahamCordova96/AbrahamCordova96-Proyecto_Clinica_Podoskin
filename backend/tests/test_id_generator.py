@@ -7,18 +7,30 @@ Este script prueba la función generar_codigo_interno() sin necesidad de base de
 
 import sys
 from pathlib import Path
+from datetime import datetime
 
 # Agregar backend al path
 backend_path = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_path))
 
-from datetime import datetime
+# Imports consolidados
+from backend.utils.id_generator import (
+    limpiar_nombre,
+    extraer_iniciales,
+    generar_codigo_interno
+)
+
+
+def print_test_result(passed: bool, description: str, details: str = ""):
+    """Helper para imprimir resultados de tests con formato consistente"""
+    status = "✅" if passed else "❌"
+    print(f"  {status} {description}")
+    if details:
+        print(f"      {details}")
 
 
 def test_limpiar_nombre():
     """Prueba la función de limpieza de nombres"""
-    from backend.utils.id_generator import limpiar_nombre
-    
     print("🧪 Test: limpiar_nombre()")
     
     casos = [
@@ -32,14 +44,12 @@ def test_limpiar_nombre():
     
     for entrada, esperado in casos:
         resultado = limpiar_nombre(entrada)
-        estado = "✅" if resultado == esperado else "❌"
-        print(f"  {estado} '{entrada}' → '{resultado}' (esperado: '{esperado}')")
+        passed = resultado == esperado
+        print_test_result(passed, f"'{entrada}' → '{resultado}'", f"esperado: '{esperado}'")
 
 
 def test_extraer_iniciales():
     """Prueba la extracción de iniciales"""
-    from backend.utils.id_generator import extraer_iniciales
-    
     print("\n🧪 Test: extraer_iniciales()")
     
     casos = [
@@ -53,9 +63,9 @@ def test_extraer_iniciales():
     
     for entrada, es_apellido, esperado in casos:
         resultado = extraer_iniciales(entrada, es_apellido)
-        estado = "✅" if resultado == esperado else "❌"
+        passed = resultado == esperado
         tipo = "Apellido" if es_apellido else "Nombre"
-        print(f"  {estado} {tipo}: '{entrada}' → '{resultado}' (esperado: '{esperado}')")
+        print_test_result(passed, f"{tipo}: '{entrada}' → '{resultado}'", f"esperado: '{esperado}'")
 
 
 def test_formato_codigo():
@@ -70,22 +80,18 @@ def test_formato_codigo():
         ("Martínez", "Ana", "EZNA"),
     ]
     
-    from backend.utils.id_generator import extraer_iniciales
-    
     for apellido, nombre, codigo_esperado in ejemplos:
         iniciales_apellido = extraer_iniciales(apellido, es_apellido=True)
         iniciales_nombre = extraer_iniciales(nombre, es_apellido=False)
         codigo = f"{iniciales_apellido}{iniciales_nombre}"
         
-        estado = "✅" if codigo == codigo_esperado else "❌"
-        print(f"  {estado} '{apellido}, {nombre}' → {codigo} (esperado: {codigo_esperado})")
+        passed = codigo == codigo_esperado
+        print_test_result(passed, f"'{apellido}, {nombre}' → {codigo}", f"esperado: {codigo_esperado}")
 
 
 def test_formato_completo():
     """Prueba el formato completo con fecha"""
     print("\n🧪 Test: Formato completo [CODIGO]-[MMDD]-[NNNNN]")
-    
-    from backend.utils.id_generator import extraer_iniciales
     
     apellido = "Ornelas Reynoso"
     nombre = "Santiago"
@@ -101,35 +107,36 @@ def test_formato_completo():
     codigo = f"{prefijo}-{fecha_str}-{contador_str}"
     esperado = "RENO-1213-00001"
     
-    estado = "✅" if codigo == esperado else "❌"
-    print(f"  {estado} Código generado: {codigo}")
-    print(f"      Esperado: {esperado}")
-    print(f"      Componentes:")
-    print(f"        - Prefijo: {prefijo} (de '{apellido}, {nombre}')")
-    print(f"        - Fecha: {fecha_str} (diciembre 13)")
-    print(f"        - Contador: {contador_str}")
+    passed = codigo == esperado
+    print_test_result(passed, f"Código generado: {codigo}", f"Esperado: {esperado}")
+    
+    if passed:
+        print(f"      Componentes:")
+        print(f"        - Prefijo: {prefijo} (de '{apellido}, {nombre}')")
+        print(f"        - Fecha: {fecha_str} (diciembre 13)")
+        print(f"        - Contador: {contador_str}")
 
 
 def test_casos_especiales():
     """Prueba casos especiales y edge cases"""
     print("\n🧪 Test: Casos especiales")
     
-    from backend.utils.id_generator import extraer_iniciales, limpiar_nombre
-    
     # Nombres cortos
     print("  📋 Nombres cortos:")
     resultado = extraer_iniciales("Li", False)
-    print(f"    {'✅' if len(resultado) == 2 else '❌'} 'Li' → '{resultado}' (debe tener 2 caracteres)")
+    passed = len(resultado) == 2
+    print_test_result(passed, f"'Li' → '{resultado}'", "debe tener 2 caracteres")
     
     # Nombres con artículos
     print("  📋 Nombres con artículos:")
     resultado = extraer_iniciales("de la Cruz", True)
-    print(f"    ✅ 'de la Cruz' → '{resultado}' (debe usar 'Cruz')")
+    print_test_result(True, f"'de la Cruz' → '{resultado}'", "debe usar 'Cruz'")
     
     # Nombres con acentos
     print("  📋 Nombres con acentos:")
     limpio = limpiar_nombre("José María")
-    print(f"    {'✅' if 'Jose' in limpio else '❌'} 'José María' → '{limpio}' (sin acentos)")
+    passed = 'Jose' in limpio
+    print_test_result(passed, f"'José María' → '{limpio}'", "sin acentos")
 
 
 def main():
