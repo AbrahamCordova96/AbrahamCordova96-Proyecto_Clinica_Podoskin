@@ -6,8 +6,52 @@ Este directorio contiene migraciones SQL manuales para las 3 bases de datos del 
 
 ### Migraciones Existentes
 
-1. **002_add_gemini_api_key.sql** - Campos para API Key de Gemini
-2. **003_nom024_compliance.sql** - Cumplimiento NOM-024 (NUEVA)
+1. **001_add_nom024_fields.sql** - Campos NOM-024 (stub/referencia)
+2. **002_add_gemini_api_key.sql** - Campos para API Key de Gemini
+3. **003_nom024_compliance.sql** - Cumplimiento NOM-024 completo
+4. **004_add_codigo_interno_pacientes.sql** - Sistema de IDs estructurados (NUEVA)
+
+---
+
+## Migración 004: Sistema de IDs Estructurados en Pacientes
+
+**Fecha**: 13 de diciembre de 2024  
+**Propósito**: Completar el sistema de IDs estructurados agregando `codigo_interno` a pacientes
+
+### Cambios Incluidos
+
+#### clinica_core_db (schema: clinic)
+- ✅ Nuevo campo en `pacientes`: `codigo_interno` VARCHAR(20) UNIQUE
+- ✅ Índice parcial para búsquedas rápidas
+- ✅ Comentario descriptivo del formato
+
+### Formato del ID Estructurado
+
+```
+[2 letras apellido][2 letras nombre]-[MMDD]-[contador]
+
+Ejemplos:
+- "Ornelas Reynoso, Santiago" → RENO-1213-00001
+- "López García, María" → LOMA-1213-00002
+```
+
+### Cómo Ejecutar
+
+```bash
+docker exec -i podoskin-db psql -U podoskin -d clinica_core_db < backend/schemas/migrations/004_add_codigo_interno_pacientes.sql
+```
+
+### Verificación
+
+```sql
+\c clinica_core_db
+
+-- Ver la columna agregada
+\d clinic.pacientes
+
+-- Verificar índice
+\di clinic.idx_pacientes_codigo_interno
+```
 
 ---
 

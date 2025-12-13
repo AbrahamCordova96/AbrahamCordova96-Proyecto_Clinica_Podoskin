@@ -53,6 +53,11 @@ class UsuarioBase(BaseModel):
 class UsuarioCreate(UsuarioBase):
     """Request para crear usuario"""
     password: str = Field(..., min_length=8)
+    # Campos necesarios para generar codigo_interno
+    # NOTA: Estos campos son obligatorios desde la implementación de IDs estructurados
+    # Para clientes existentes, deben actualizar sus requests para incluir estos campos
+    nombre_completo: str = Field(..., min_length=5, description="Nombre completo para generar ID estructurado (ej: 'Santiago Ornelas')")
+    apellido_completo: str = Field(..., min_length=3, description="Apellidos completos para generar ID estructurado (ej: 'Ornelas Reynoso')")
 
 
 class UsuarioUpdate(BaseModel):
@@ -76,6 +81,7 @@ class UsuarioResponse(BaseModel):
     rol: str
     activo: bool
     clinica_id: Optional[int] = None
+    codigo_interno: Optional[str] = None  # ID estructurado
     last_login: Optional[datetime] = None
     created_at: Optional[datetime] = None
     
@@ -175,7 +181,15 @@ async def create_usuario(
     - Admin: Control total del sistema
     - Podologo: Acceso clínico completo
     - Recepcion: Solo agenda y datos básicos
+    
+    **Sistema de IDs estructurados:**
+    - Se genera automáticamente un codigo_interno único
+    - Formato: [2 letras apellido][2 letras nombre]-[MMDD]-[contador]
+    - Ejemplo: "RENO-1213-00001" para "Ornelas Reynoso, Santiago"
+    - Se usa para login alternativo (además de username y email)
     """
+    from backend.utils.id_generator import generar_codigo_interno
+    
     # Verificar que el nombre de usuario no exista
     existing = db.query(SysUsuario).filter(
         SysUsuario.nombre_usuario == data.nombre_usuario
@@ -196,7 +210,28 @@ async def create_usuario(
         activo=True
     )
     
+    # Agregar a la sesión para obtener ID antes de generar código
     db.add(usuario)
+    db.flush()  # Obtiene el ID sin hacer commit
+    
+    # Generar código interno estructurado
+    try:
+        codigo = generar_codigo_interno(
+            apellido_paterno=data.apellido_completo,
+            nombre=data.nombre_completo,
+            fecha_registro=datetime.now(timezone.utc),
+            model_class=SysUsuario,
+            db=db
+        )
+        usuario.codigo_interno = codigo
+        logger.info(f"Usuario creado con codigo_interno: {codigo}")
+    except Exception as e:
+        # Si falla la generación del código, continuar sin él
+        # NOTA: El campo codigo_interno es nullable en BD para permitir migración gradual
+        # Los usuarios sin codigo_interno aún pueden usar username/email para login
+        logger.error(f"ERROR generando codigo_interno para usuario '{data.nombre_usuario}': {e}", exc_info=True)
+        logger.warning(f"Usuario '{data.nombre_usuario}' creado SIN codigo_interno. Puede usar username/email para login.")
+    
     db.commit()
     db.refresh(usuario)
     

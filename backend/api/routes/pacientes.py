@@ -18,9 +18,10 @@
 # =============================================================================
 
 from typing import List, Optional
-from datetime import date, datetime
+from datetime import date, datetime, timezone
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, HTMLResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
 from pydantic import BaseModel, Field, EmailStr
@@ -37,6 +38,11 @@ from backend.api.deps.permissions import (
 from backend.schemas.auth.models import SysUsuario
 from backend.schemas.core.models import Paciente, HistorialMedicoGeneral, HistorialGineco, Tratamiento, EvolucionClinica
 from backend.api.utils.pdf_export import generate_patient_pdf
+from backend.api.utils.expediente_export import exportar_expediente_html
+from backend.utils.id_generator import generar_codigo_interno
+
+# Logger para operaciones importantes
+logger = logging.getLogger(__name__)
 
 
 # =============================================================================
@@ -90,6 +96,7 @@ class PacienteResponse(PacienteBase):
     """Response de paciente (todos los campos)"""
     id_paciente: int
     id_clinica: int
+    codigo_interno: Optional[str] = None  # ID estructurado
     fecha_registro: Optional[datetime] = None
     created_by: Optional[int] = None
     
@@ -287,6 +294,11 @@ async def create_paciente(
     
     **Campos requeridos:**
     - nombres, apellidos, fecha_nacimiento, telefono
+    
+    **Sistema de IDs estructurados:**
+    - Se genera automáticamente un codigo_interno único
+    - Formato: [2 letras apellido][2 letras nombre]-[MMDD]-[contador]
+    - Ejemplo: "RENO-1213-00001" para "Ornelas Reynoso, Santiago"
     """
     # Crear paciente
     paciente = Paciente(
@@ -295,7 +307,30 @@ async def create_paciente(
         created_by=current_user.id_usuario
     )
     
+    # Agregar a la sesión para obtener el ID antes de generar el código
     db.add(paciente)
+    db.flush()  # Obtiene el ID sin hacer commit
+    
+    # Generar código interno estructurado
+    try:
+        codigo = generar_codigo_interno(
+            apellido_paterno=paciente.apellidos,
+            nombre=paciente.nombres,
+            fecha_registro=datetime.now(timezone.utc),
+            model_class=Paciente,
+            db=db
+        )
+        paciente.codigo_interno = codigo
+        logger.info(f"Paciente creado con codigo_interno: {codigo}")
+    except Exception as e:
+        # Si falla la generación del código, continuar sin él (no es crítico)
+        # NOTA: El campo codigo_interno es nullable para permitir:
+        # 1. Migración gradual de pacientes existentes
+        # 2. Tolerancia a fallos en generación de IDs
+        # Los pacientes sin codigo_interno aún son completamente funcionales
+        logger.error(f"ERROR generando codigo_interno para paciente '{paciente.nombres} {paciente.apellidos}': {e}", exc_info=True)
+        logger.warning(f"Paciente {paciente.id_paciente} creado SIN codigo_interno. El expediente es funcional pero sin ID estructurado.")
+    
     db.commit()
     db.refresh(paciente)
     
@@ -557,6 +592,64 @@ async def export_patient_pdf(
 
 
 # =============================================================================
+# =============================================================================
+# ENDPOINT: GET /pacientes/{id}/expediente/print
+# =============================================================================
+
+@router.get("/{paciente_id}/expediente/print", dependencies=[Depends(require_role(CLINICAL_ROLES))])
+async def print_expediente(
+    paciente_id: int,
+    core_db: Session = Depends(get_core_db),
+    ops_db: Session = Depends(get_ops_db)
+):
+    """
+    Genera un expediente clínico en formato HTML listo para imprimir.
+    
+    **NOM-024 Compliance**: Endpoint específico para impresión de expedientes.
+    
+    **Permisos**: Admin y Podólogo (contiene información clínica sensible)
+    
+    **Formato**: HTML optimizado para impresión con CSS profesional
+    
+    **Incluye**:
+    - Datos personales completos del paciente
+    - Historial médico general
+    - Todos los tratamientos registrados
+    - Todas las evoluciones clínicas (notas SOAP)
+    - Signos vitales
+    - Formato listo para imprimir o convertir a PDF
+    
+    **Uso recomendado**:
+    - Entregar copia física al paciente
+    - Imprimir para archivo físico
+    - Convertir a PDF con navegador (Ctrl+P → Guardar como PDF)
+    """
+    # Verificar que el paciente existe
+    paciente = core_db.query(Paciente).filter_by(id_paciente=paciente_id).first()
+    if not paciente:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Paciente con ID {paciente_id} no encontrado"
+        )
+    
+    try:
+        # Generar HTML del expediente completo
+        html_content = exportar_expediente_html(core_db, ops_db, paciente_id)
+        
+        return HTMLResponse(
+            content=html_content,
+            headers={
+                "Content-Disposition": f"inline; filename=expediente_{paciente_id}.html"
+            }
+        )
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error generando expediente para impresión: {str(e)}"
+        )
+
+
 # NOM-024 COMPLIANCE: EXPORTAR EXPEDIENTE COMPLETO
 # =============================================================================
 # Endpoint para exportar el expediente completo de un paciente en múltiples formatos
