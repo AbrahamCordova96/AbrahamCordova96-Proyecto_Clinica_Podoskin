@@ -278,6 +278,8 @@ RENO-1214-00001  # Ornelas Reynoso, Santiago (nuevo día, contador reinicia)
 
 ### Testing
 - [ ] Test unitario: `generar_codigo_interno()` con múltiples casos
+  - ✅ Tests básicos creados en `backend/tests/test_id_generator.py`
+  - [ ] Tests de integración con base de datos
 - [ ] Test integración: POST /usuarios con codigo_interno
 - [ ] Test integración: POST /pacientes con codigo_interno
 - [ ] Test: GET /pacientes/{id}/expediente/print
@@ -295,6 +297,37 @@ RENO-1214-00001  # Ornelas Reynoso, Santiago (nuevo día, contador reinicia)
 - [ ] Probar POST /pacientes y verificar codigo_interno
 - [ ] Probar GET /pacientes/{id}/expediente/print
 - [ ] Verificar permisos en todos los endpoints
+
+---
+
+## ✅ Code Review Completado
+
+**Fecha de revisión:** 13 de diciembre de 2024
+
+### Issues Identificados y Corregidos
+
+1. ✅ **Imports consolidados en pacientes.py**
+   - Movidos imports de funciones al nivel de módulo
+   - `exportar_expediente_html` y `generar_codigo_interno` importados al inicio
+   - `HTMLResponse` importado al inicio
+
+2. ✅ **Timezone consistency**
+   - Cambiado `datetime.now()` por `datetime.now(timezone.utc)` en creación de pacientes
+   - Consistente con el endpoint de creación de usuarios
+
+3. ✅ **Test refactorizado**
+   - Agregada función helper `print_test_result()` para reducir duplicación
+   - Imports consolidados al inicio del módulo
+   - Código más limpio y mantenible
+
+4. ✅ **Imports duplicados eliminados**
+   - Todos los imports de `backend.utils.id_generator` movidos al nivel de módulo
+   - Mejor performance (imports ejecutados una sola vez)
+
+### Resultado
+
+**Estado:** ✅ Todos los issues de code review corregidos  
+**Commits:** 3 commits totales (implementación + documentación + correcciones)
 
 ---
 
