@@ -54,6 +54,8 @@ class UsuarioCreate(UsuarioBase):
     """Request para crear usuario"""
     password: str = Field(..., min_length=8)
     # Campos necesarios para generar codigo_interno
+    # NOTA: Estos campos son obligatorios desde la implementación de IDs estructurados
+    # Para clientes existentes, deben actualizar sus requests para incluir estos campos
     nombre_completo: str = Field(..., min_length=5, description="Nombre completo para generar ID estructurado (ej: 'Santiago Ornelas')")
     apellido_completo: str = Field(..., min_length=3, description="Apellidos completos para generar ID estructurado (ej: 'Ornelas Reynoso')")
 
@@ -225,7 +227,10 @@ async def create_usuario(
         logger.info(f"Usuario creado con codigo_interno: {codigo}")
     except Exception as e:
         # Si falla la generación del código, continuar sin él
-        logger.warning(f"No se pudo generar codigo_interno para usuario: {e}")
+        # NOTA: El campo codigo_interno es nullable en BD para permitir migración gradual
+        # Los usuarios sin codigo_interno aún pueden usar username/email para login
+        logger.error(f"ERROR generando codigo_interno para usuario '{data.nombre_usuario}': {e}", exc_info=True)
+        logger.warning(f"Usuario '{data.nombre_usuario}' creado SIN codigo_interno. Puede usar username/email para login.")
     
     db.commit()
     db.refresh(usuario)

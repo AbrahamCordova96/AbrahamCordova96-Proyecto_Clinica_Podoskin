@@ -321,9 +321,15 @@ async def create_paciente(
             db=db
         )
         paciente.codigo_interno = codigo
+        logger.info(f"Paciente creado con codigo_interno: {codigo}")
     except Exception as e:
         # Si falla la generación del código, continuar sin él (no es crítico)
-        logger.warning(f"No se pudo generar codigo_interno para paciente: {e}")
+        # NOTA: El campo codigo_interno es nullable para permitir:
+        # 1. Migración gradual de pacientes existentes
+        # 2. Tolerancia a fallos en generación de IDs
+        # Los pacientes sin codigo_interno aún son completamente funcionales
+        logger.error(f"ERROR generando codigo_interno para paciente '{paciente.nombres} {paciente.apellidos}': {e}", exc_info=True)
+        logger.warning(f"Paciente {paciente.id_paciente} creado SIN codigo_interno. El expediente es funcional pero sin ID estructurado.")
     
     db.commit()
     db.refresh(paciente)
