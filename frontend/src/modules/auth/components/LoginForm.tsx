@@ -9,7 +9,7 @@ import LogoImage from '@/assets/images/Logo.png';
 export const LoginForm = () => {
   const { login, isLoading, error, clearError } = useAuthStore();
   
-  const [username, setUsername] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -17,7 +17,7 @@ export const LoginForm = () => {
     clearError();
     
     try {
-      await login(username, password);
+      await login(identifier, password);
     } catch (err) {
     }
   };
@@ -42,20 +42,23 @@ export const LoginForm = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-sm font-medium">
-                Usuario
+              <Label htmlFor="identifier" className="text-sm font-medium">
+                Usuario, Email o ID
               </Label>
               <Input
-                id="username"
+                id="identifier"
                 type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 className="w-full"
-                placeholder="Ingresa tu usuario"
+                placeholder="Ingresa tu usuario, email o ID"
                 required
                 disabled={isLoading}
                 autoFocus
               />
+              <p className="text-xs text-muted-foreground">
+                Puedes usar tu usuario, email o ID estructurado (ej: ASGO-1213-00001)
+              </p>
             </div>
             
             <div className="space-y-2">
@@ -115,9 +118,9 @@ export const LoginForm = () => {
           <div className="mt-6 bg-muted/50 rounded-lg p-4 text-xs text-muted-foreground border border-border">
             <p className="font-semibold mb-2 text-foreground">👤 Usuarios de prueba:</p>
             <div className="space-y-1 font-mono">
-              <p>• Admin: <code className="bg-background px-2 py-1 rounded text-foreground">admin / Admin2024!</code></p>
-              <p>• Podólogo: <code className="bg-background px-2 py-1 rounded text-foreground">dr.ornelas / Podo2024!</code></p>
-              <p>• Recepción: <code className="bg-background px-2 py-1 rounded text-foreground">recepcion / Recep2024!</code></p>
+              <p>• Admin: <code className="bg-background px-2 py-1 rounded text-foreground">admin_santiago</code> / <code className="bg-background px-2 py-1 rounded text-foreground">Ornelas2025!</code></p>
+              <p>• ID Admin: <code className="bg-background px-2 py-1 rounded text-foreground">ASGO-1213-00001</code></p>
+              <p>• Podólogo: <code className="bg-background px-2 py-1 rounded text-foreground">dr.ornelas</code> / <code className="bg-background px-2 py-1 rounded text-foreground">Podo2024!</code></p>
             </div>
           </div>
         )}

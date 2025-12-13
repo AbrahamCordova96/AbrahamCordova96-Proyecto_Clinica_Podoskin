@@ -5,7 +5,7 @@ import { authService } from '../services/authService';
 import axios from 'axios';
 
 interface AuthActions {
-  login: (username: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<void>;
   logout: () => void;
   setToken: (token: string) => void;
   clearError: () => void;
@@ -22,11 +22,11 @@ export const useAuthStore = create<AuthStore>()(
       isLoading: false,
       error: null,
 
-      login: async (username: string, password: string) => {
+      login: async (identifier: string, password: string) => {
         set({ isLoading: true, error: null });
         
         try {
-          const response = await authService.login({ username, password });
+          const response = await authService.login({ username: identifier, password });
           
           const { access_token, user } = response;
           

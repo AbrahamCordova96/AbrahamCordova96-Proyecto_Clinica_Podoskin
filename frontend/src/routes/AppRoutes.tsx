@@ -7,6 +7,7 @@ import { AgendaView } from '../modules/agenda/components/AgendaView'
 import { HistorialPacientesView } from '../modules/pacientes/components/HistorialPacientesView'
 import { ConfiguracionesView } from '../components/ConfiguracionesView'
 import { SettingsPage } from '../modules/settings'
+import { AuditPage } from '../modules/audit/pages/AuditPage'
 
 const UnauthorizedPage = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -31,6 +32,7 @@ export const AppRoutes = () => (
           
           <Route element={<ProtectedRoute allowedRoles={['Admin', 'Podologo']} />}>
             <Route path="/historial-pacientes" element={<HistorialPacientesView />} />
+            <Route path="/auditoria" element={<AuditPage />} />
           </Route>
           
           <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
