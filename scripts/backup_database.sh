@@ -36,15 +36,16 @@ echo "=========================================="
 backup_database() {
     local db_name=$1
     local backup_file="${BACKUP_DIR}/backup_${db_name}_${DATE}.sql"
+    local error_log="${BACKUP_DIR}/backup_errors.log"
     
     echo -n "Backing up ${db_name}... "
     
-    if docker exec "$CONTAINER_NAME" pg_dump -U "$DB_USER" "$db_name" > "$backup_file" 2>/dev/null; then
+    if docker exec "$CONTAINER_NAME" pg_dump -U "$DB_USER" "$db_name" > "$backup_file" 2>> "$error_log"; then
         # Comprimir el backup
         gzip "$backup_file"
         echo -e "${GREEN}✓ OK${NC} (${backup_file}.gz)"
     else
-        echo -e "${RED}✗ FAILED${NC}"
+        echo -e "${RED}✗ FAILED${NC} (check ${error_log})"
         return 1
     fi
 }

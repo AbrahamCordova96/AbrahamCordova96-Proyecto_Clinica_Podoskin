@@ -16,15 +16,18 @@ from datetime import date, datetime
 from sqlalchemy.orm import Session
 from jinja2 import Template, Environment, FileSystemLoader
 import json
-import os
 import logging
 
 from backend.schemas.core.models import (
     Paciente, HistorialMedicoGeneral, Tratamiento, EvolucionClinica
 )
 from backend.schemas.ops.models import Podologo
+from backend.api.core.config import get_settings
 
 logger = logging.getLogger(__name__)
+
+# Get settings for template directory
+settings = get_settings()
 
 
 def calcular_edad(fecha_nacimiento: date) -> int:
@@ -126,12 +129,8 @@ def exportar_expediente_html(
         "fecha_generacion": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     }
     
-    # Cargar y renderizar template
-    template_dir = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-        "templates"
-    )
-    env = Environment(loader=FileSystemLoader(template_dir))
+    # Cargar y renderizar template usando configuración
+    env = Environment(loader=FileSystemLoader(str(settings.TEMPLATES_DIR)))
     template = env.get_template("expediente.html")
     
     html_output = template.render(**template_data)

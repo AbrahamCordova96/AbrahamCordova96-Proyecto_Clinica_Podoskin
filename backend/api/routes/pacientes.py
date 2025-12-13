@@ -25,7 +25,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
 from pydantic import BaseModel, Field, EmailStr
 
-from backend.api.deps.database import get_core_db
+from backend.api.deps.database import get_core_db, get_ops_db
 from backend.api.deps.permissions import (
     require_role, 
     ALL_ROLES, 
@@ -568,7 +568,7 @@ async def exportar_expediente_completo(
     paciente_id: int,
     formato: str = Query("html", regex="^(html|json|xml)$", description="Formato de exportación: html, json, xml"),
     core_db: Session = Depends(get_core_db),
-    ops_db = Depends(lambda: next(__import__('backend.api.deps.database', fromlist=['get_ops_db']).get_ops_db()))
+    ops_db: Session = Depends(get_ops_db)
 ):
     """
     Exporta el expediente clínico completo de un paciente.
