@@ -10,14 +10,8 @@ export const authServiceReal = {
       credentials,
       {
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        transformRequest: [(data) => {
-          const params = new URLSearchParams();
-          params.append('username', data.username);
-          params.append('password', data.password);
-          return params;
-        }]
+          'Content-Type': 'application/json',
+        }
       }
     );
     

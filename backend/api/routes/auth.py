@@ -23,6 +23,7 @@ from typing import Optional
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from pydantic import BaseModel, Field, field_validator
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -138,8 +139,16 @@ async def login(
     **NUEVO:** Ahora también verifica si el usuario tiene API Key de Gemini configurada
     y retorna información adicional del usuario.
     
+    **IMPORTANTE:** Puedes hacer login con cualquiera de estos 3 métodos:
+    1. **Username**: "admin" o "santiago.ornelas"
+    2. **Email**: "admin@podoskin.local" o "santiago@podoskin.com"
+    3. **ID estructurado**: "ASGO-1213-00001"
+    
     **Parámetros (JSON):**
-    - username: Nombre de usuario (mínimo 3 caracteres)
+    - username: Puede ser cualquiera de los siguientes (mínimo 3 caracteres):
+      * Nombre de usuario (ej: "admin", "santiago.ornelas")
+      * Email (ej: "admin@podoskin.local")
+      * ID estructurado (ej: "ASGO-1213-00001")
     - password: Contraseña (mínimo 8 caracteres)
     
     **Retorna:**
@@ -157,6 +166,30 @@ async def login(
     **Errores:**
     - 401: Credenciales inválidas
     - 403: Usuario desactivado o cuenta bloqueada
+    
+    **Ejemplo de uso (con username):**
+    ```json
+    {
+        "username": "admin",
+        "password": "Admin2024!"
+    }
+    ```
+    
+    **Ejemplo de uso (con email):**
+    ```json
+    {
+        "username": "santiago@podoskin.com",
+        "password": "Ornelas2025!"
+    }
+    ```
+    
+    **Ejemplo de uso (con ID estructurado):**
+    ```json
+    {
+        "username": "ASGO-1213-00001",
+        "password": "Ornelas2025!"
+    }
+    ```
     
     **Ejemplo de respuesta:**
     ```json
@@ -184,9 +217,17 @@ async def login(
     client_ip = request.client.host if request.client else None
     settings = get_settings()
     
-    # 1. Buscar usuario por nombre de usuario
+    # 1. Buscar usuario por nombre de usuario, email o código interno (ID estructurado)
+    # Permite login con cualquiera de los 3 métodos:
+    # - Username: "admin" o "santiago.ornelas"
+    # - Email: "admin@podoskin.local" o "santiago@podoskin.com"
+    # - ID estructurado: "ASGO-1213-00001"
     user = db.query(SysUsuario).filter(
-        SysUsuario.nombre_usuario == credentials.username
+        or_(
+            SysUsuario.nombre_usuario == credentials.username,
+            SysUsuario.email == credentials.username,
+            SysUsuario.codigo_interno == credentials.username
+        )
     ).first()
     
     # 2. Verificar que el usuario existe

@@ -48,9 +48,29 @@ export const useAuthStore = create<AuthStore>()(
           }
           
         } catch (error: any) {
+          let errorMessage = 'Error de autenticación';
+          
+          if (error.response?.data?.detail) {
+            const detail = error.response.data.detail;
+            // Si detail es un string, usarlo directamente
+            if (typeof detail === 'string') {
+              errorMessage = detail;
+            } 
+            // Si detail es un array de errores de validación Pydantic
+            else if (Array.isArray(detail)) {
+              errorMessage = detail.map((err: any) => err.msg || err.message).join(', ');
+            }
+            // Si detail es un objeto, extraer el mensaje
+            else if (typeof detail === 'object' && detail.msg) {
+              errorMessage = detail.msg;
+            }
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+          
           set({
             isLoading: false,
-            error: error.response?.data?.detail || error.message || 'Error de autenticación'
+            error: errorMessage
           });
           throw error;
         }
