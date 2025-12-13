@@ -34,8 +34,9 @@ export const ProfessionalDataSettings = () => {
     institucion_emisora: ''
   })
 
-  // Only show for Podologo role
-  const isPodologo = user?.rol === 'Podologo' || user?.rol === 'Admin'
+  // Only show for Podologo or Admin roles
+  const CLINICAL_ROLES = ['Podologo', 'Admin']
+  const isPodologo = user?.rol && CLINICAL_ROLES.includes(user.rol)
   
   useEffect(() => {
     if (isPodologo) {
@@ -111,9 +112,9 @@ export const ProfessionalDataSettings = () => {
       console.error('Error saving professional data:', error)
       
       if (error.response?.status === 404) {
-        toast.warning('Endpoint no disponible. El backend necesita implementar este endpoint.')
+        toast.warning('Esta función aún no está disponible. Contacta al administrador del sistema.')
       } else {
-        toast.error('Error al guardar datos profesionales')
+        toast.error('Error al guardar datos profesionales. Por favor, intenta nuevamente.')
       }
     } finally {
       setIsSaving(false)

@@ -41,7 +41,14 @@ export const ESTADOS_MEXICO = [
 
 /**
  * Validates CURP format (basic validation)
- * Full format: 4 letters + 6 digits + 1 letter (H/M) + 2 letters + 3 letters/digits + 2 digits
+ * Full format breakdown:
+ * - Position 1-4: First 4 letters (2 from last name, 2 from first name)
+ * - Position 5-10: Birth date YYMMDD
+ * - Position 11: Sex (H=Male, M=Female)
+ * - Position 12-13: State of birth code (2 letters)
+ * - Position 14-16: First internal consonants of names (3 letters)
+ * - Position 17: Homonym differentiator (0-9 or A-Z)
+ * - Position 18: Check digit (0-9)
  * Example: HEGG560427MVZRRL04
  */
 export const validateCURP = (curp: string): boolean => {

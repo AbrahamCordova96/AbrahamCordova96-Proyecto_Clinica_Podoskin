@@ -281,7 +281,7 @@ export function HistorialPacientesView() {
       // In the future, this should call: GET /api/v1/reportes/expediente/{id}/html
       const printWindow = window.open('', '_blank')
       if (!printWindow) {
-        toast.error('No se pudo abrir la ventana de impresión. Verifica los permisos del navegador.')
+        toast.error('No se pudo abrir la ventana de impresión. Por favor, permite ventanas emergentes para este sitio en la configuración de tu navegador.')
         return
       }
       
@@ -346,12 +346,12 @@ export function HistorialPacientesView() {
             </div>
             
             <script>
-              // Auto print dialog after load
-              window.onload = function() {
+              // Trigger print dialog after window loads
+              window.addEventListener('load', function() {
                 setTimeout(function() {
                   window.print();
                 }, 500);
-              };
+              });
             </script>
           </body>
         </html>
