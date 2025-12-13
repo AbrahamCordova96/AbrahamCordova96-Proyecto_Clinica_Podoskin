@@ -16,6 +16,6 @@ export const dashboardServiceReal = {
 
 import { dashboardServiceMock } from './dashboardService.mock'
 
-export const USE_MOCK = true
+export const USE_MOCK = false
 
 export const dashboardService = USE_MOCK ? dashboardServiceMock : dashboardServiceReal
