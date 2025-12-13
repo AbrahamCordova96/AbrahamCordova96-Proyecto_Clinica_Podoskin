@@ -16,6 +16,11 @@ class Clinica(Base):
     __table_args__ = {"schema": "auth"}
 
     id_clinica = Column(BigInteger, primary_key=True, autoincrement=True)
+    
+    # Código interno estructurado: PODO-1213-00001
+    # Formato: [4 letras nombre]-[MMDD]-[contador]
+    codigo_interno = Column(String(20), unique=True, nullable=False, index=True)
+    
     nombre = Column(String, nullable=False)
     rfc = Column(String)
     activa = Column(Boolean, default=True)
@@ -35,6 +40,11 @@ class SysUsuario(Base):
     __table_args__ = {"schema": "auth"}
 
     id_usuario = Column(BigInteger, primary_key=True, autoincrement=True)
+    
+    # Código interno estructurado: RENO-1213-00001
+    # Formato: [2 letras apellido][2 letras nombre]-[MMDD]-[contador]
+    # Usado para login alternativo (además de username y email)
+    codigo_interno = Column(String(20), unique=True, nullable=False, index=True)
 
     nombre_usuario = Column(String(50), nullable=False, unique=True)
     password_hash = Column(String, nullable=False)
