@@ -488,11 +488,19 @@ export function generarExpedienteHTML({
 
   <script>
     // Auto-abrir diálogo de impresión después de cargar
-    window.addEventListener('load', function() {
-      setTimeout(function() {
-        window.print();
-      }, 500);
-    });
+    // Esperar a que todos los recursos estén cargados
+    if (document.readyState === 'complete') {
+      window.print();
+    } else {
+      window.addEventListener('load', function() {
+        // Usar requestAnimationFrame para asegurar que el render esté completo
+        requestAnimationFrame(function() {
+          setTimeout(function() {
+            window.print();
+          }, 300);
+        });
+      });
+    }
   </script>
 </body>
 </html>
