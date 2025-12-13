@@ -9,10 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { MagnifyingGlass, Plus, User, Phone, EnvelopeSimple, MapPin, IdentificationCard, CalendarBlank } from '@phosphor-icons/react'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
+import { MagnifyingGlass, Plus, User, Phone, EnvelopeSimple, MapPin, IdentificationCard, CalendarBlank, Printer } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { usePacientesStore } from '../stores/pacientesStore'
 import { calculateAge } from '../utils/pacientes.utils'
+import { ESTADOS_MEXICO, getCURPValidationMessage } from '../constants/nom024-catalogos'
 import type { Paciente, TratamientoEstado, TratamientoCreateInput, EvolucionCreateInput, PacienteCreateInput } from '../types/pacientes.types'
 
 export function HistorialPacientesView() {
@@ -74,7 +76,14 @@ export function HistorialPacientesView() {
     telefono: '',
     email: '',
     domicilio: '',
-    documento_id: ''
+    documento_id: '',
+    // NOM-024 optional fields
+    curp: '',
+    estado_nacimiento: '',
+    nacionalidad: 'MEX',
+    estado_residencia: '',
+    municipio_residencia: '',
+    localidad_residencia: ''
   })
 
   const [tratamientoForm, setTratamientoForm] = useState<TratamientoCreateInput>({
@@ -92,7 +101,10 @@ export function HistorialPacientesView() {
     fecha_visita: '',
     nota: '',
     tipo_visita: '',
-    signos_vitales: {}
+    signos_vitales: {},
+    // NOM-024 optional fields
+    diagnostico_codigo_cie10: '',
+    procedimiento_codigo: ''
   })
 
   const handleViewPaciente = (paciente: Paciente) => {
@@ -108,7 +120,14 @@ export function HistorialPacientesView() {
       telefono: '',
       email: '',
       domicilio: '',
-      documento_id: ''
+      documento_id: '',
+      // NOM-024 optional fields
+      curp: '',
+      estado_nacimiento: '',
+      nacionalidad: 'MEX',
+      estado_residencia: '',
+      municipio_residencia: '',
+      localidad_residencia: ''
     })
     setIsCreateMode(true)
   }
@@ -123,12 +142,28 @@ export function HistorialPacientesView() {
       telefono: selectedPaciente.telefono,
       email: selectedPaciente.email || '',
       domicilio: selectedPaciente.domicilio || '',
-      documento_id: selectedPaciente.documento_id || ''
+      documento_id: selectedPaciente.documento_id || '',
+      // NOM-024 optional fields
+      curp: selectedPaciente.curp || '',
+      estado_nacimiento: selectedPaciente.estado_nacimiento || '',
+      nacionalidad: selectedPaciente.nacionalidad || 'MEX',
+      estado_residencia: selectedPaciente.estado_residencia || '',
+      municipio_residencia: selectedPaciente.municipio_residencia || '',
+      localidad_residencia: selectedPaciente.localidad_residencia || ''
     })
     setIsEditMode(true)
   }
 
   const handleSavePaciente = async () => {
+    // Validate CURP if provided
+    if (formData.curp) {
+      const curpError = getCURPValidationMessage(formData.curp.toUpperCase())
+      if (curpError) {
+        toast.warning(curpError + ' (campo opcional)')
+        // Don't block save, just warn
+      }
+    }
+    
     if (isEditMode && selectedPaciente) {
       const result = await updatePaciente(selectedPaciente.id_paciente, formData)
       if (result) {
@@ -191,7 +226,10 @@ export function HistorialPacientesView() {
       fecha_visita: new Date().toISOString().split('T')[0],
       nota: '',
       tipo_visita: '',
-      signos_vitales: {}
+      signos_vitales: {},
+      // NOM-024 optional fields
+      diagnostico_codigo_cie10: '',
+      procedimiento_codigo: ''
     })
     setShowEvolucionModal(true)
   }
@@ -232,6 +270,100 @@ export function HistorialPacientesView() {
       }
     } else {
       toast.error('Error al actualizar tratamiento')
+    }
+  }
+
+  const handlePrintExpediente = async () => {
+    if (!selectedPaciente) return
+    
+    try {
+      // For now, open a new window with a simple HTML representation
+      // In the future, this should call: GET /api/v1/reportes/expediente/{id}/html
+      const printWindow = window.open('', '_blank')
+      if (!printWindow) {
+        toast.error('No se pudo abrir la ventana de impresión. Por favor, permite ventanas emergentes para este sitio en la configuración de tu navegador.')
+        return
+      }
+      
+      // Create a simple HTML document for printing
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Expediente - ${selectedPaciente.nombres} ${selectedPaciente.apellidos}</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              h1 { color: #333; border-bottom: 2px solid #666; padding-bottom: 10px; }
+              h2 { color: #555; margin-top: 20px; }
+              .info-row { margin: 10px 0; }
+              .label { font-weight: bold; display: inline-block; width: 200px; }
+              table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+              th { background-color: #f2f2f2; }
+              @media print {
+                button { display: none; }
+              }
+            </style>
+          </head>
+          <body>
+            <h1>Expediente Clínico</h1>
+            <h2>Datos del Paciente</h2>
+            <div class="info-row"><span class="label">Nombre completo:</span> ${selectedPaciente.nombres} ${selectedPaciente.apellidos}</div>
+            <div class="info-row"><span class="label">Fecha de nacimiento:</span> ${new Date(selectedPaciente.fecha_nacimiento).toLocaleDateString('es')}</div>
+            <div class="info-row"><span class="label">Edad:</span> ${calculateAge(selectedPaciente.fecha_nacimiento)} años</div>
+            <div class="info-row"><span class="label">Sexo:</span> ${selectedPaciente.sexo}</div>
+            <div class="info-row"><span class="label">Teléfono:</span> ${selectedPaciente.telefono}</div>
+            <div class="info-row"><span class="label">Email:</span> ${selectedPaciente.email || 'No registrado'}</div>
+            <div class="info-row"><span class="label">Domicilio:</span> ${selectedPaciente.domicilio || 'No registrado'}</div>
+            ${selectedPaciente.curp ? `<div class="info-row"><span class="label">CURP:</span> ${selectedPaciente.curp}</div>` : ''}
+            
+            <h2>Tratamientos</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha Inicio</th>
+                  <th>Problema</th>
+                  <th>Estado</th>
+                  <th>Fecha Fin</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${pacienteTratamientos.map((t: any) => `
+                  <tr>
+                    <td>${new Date(t.fecha_inicio).toLocaleDateString('es')}</td>
+                    <td>${t.problema}</td>
+                    <td>${t.estado}</td>
+                    <td>${t.fecha_fin ? new Date(t.fecha_fin).toLocaleDateString('es') : '-'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+            
+            <div style="margin-top: 40px; text-align: center;">
+              <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">
+                Imprimir
+              </button>
+            </div>
+            
+            <script>
+              // Trigger print dialog after window loads
+              window.addEventListener('load', function() {
+                setTimeout(function() {
+                  window.print();
+                }, 500);
+              });
+            </script>
+          </body>
+        </html>
+      `
+      
+      printWindow.document.write(htmlContent)
+      printWindow.document.close()
+      
+      toast.success('Expediente preparado para impresión')
+    } catch (error) {
+      console.error('Error al generar expediente:', error)
+      toast.error('Error al generar expediente para impresión')
     }
   }
 
@@ -311,9 +443,15 @@ export function HistorialPacientesView() {
                         {calculateAge(selectedPaciente.fecha_nacimiento)} años • {selectedPaciente.sexo}
                       </p>
                     </div>
-                    <Button size="sm" onClick={() => handleEditPaciente(selectedPaciente)}>
-                      Editar
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={handlePrintExpediente}>
+                        <Printer size={16} className="mr-1" />
+                        Imprimir
+                      </Button>
+                      <Button size="sm" onClick={() => handleEditPaciente(selectedPaciente)}>
+                        Editar
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="p-6 overflow-y-auto h-[calc(100%-90px)]">
@@ -385,6 +523,57 @@ export function HistorialPacientesView() {
                         </div>
                         <p className="text-foreground font-medium">{selectedPaciente.domicilio || 'No registrado'}</p>
                       </div>
+
+                      {/* NOM-024 Fields Display - Collapsible */}
+                      {(selectedPaciente.curp || selectedPaciente.estado_nacimiento || selectedPaciente.nacionalidad || 
+                        selectedPaciente.estado_residencia) && (
+                        <Accordion type="single" collapsible className="border-t pt-4 mt-4">
+                          <AccordionItem value="nom024-display" className="border-none">
+                            <AccordionTrigger className="py-2">
+                              <span className="text-sm font-medium text-muted-foreground">Datos NOM-024</span>
+                            </AccordionTrigger>
+                            <AccordionContent className="space-y-3 pt-2">
+                              {selectedPaciente.curp && (
+                                <div className="space-y-1">
+                                  <p className="text-xs text-muted-foreground">CURP</p>
+                                  <p className="text-sm font-mono font-medium">{selectedPaciente.curp}</p>
+                                </div>
+                              )}
+                              
+                              {selectedPaciente.estado_nacimiento && (
+                                <div className="space-y-1">
+                                  <p className="text-xs text-muted-foreground">Estado de Nacimiento</p>
+                                  <p className="text-sm font-medium">
+                                    {ESTADOS_MEXICO.find(e => e.codigo === selectedPaciente.estado_nacimiento)?.nombre || selectedPaciente.estado_nacimiento}
+                                  </p>
+                                </div>
+                              )}
+
+                              {selectedPaciente.nacionalidad && (
+                                <div className="space-y-1">
+                                  <p className="text-xs text-muted-foreground">Nacionalidad</p>
+                                  <p className="text-sm font-medium">{selectedPaciente.nacionalidad}</p>
+                                </div>
+                              )}
+
+                              {(selectedPaciente.estado_residencia || selectedPaciente.municipio_residencia || 
+                                selectedPaciente.localidad_residencia) && (
+                                <div className="space-y-1">
+                                  <p className="text-xs text-muted-foreground">Residencia</p>
+                                  <p className="text-sm font-medium">
+                                    {selectedPaciente.localidad_residencia && `${selectedPaciente.localidad_residencia}, `}
+                                    {selectedPaciente.municipio_residencia && `${selectedPaciente.municipio_residencia}, `}
+                                    {selectedPaciente.estado_residencia && (
+                                      ESTADOS_MEXICO.find(e => e.codigo === selectedPaciente.estado_residencia)?.nombre || 
+                                      selectedPaciente.estado_residencia
+                                    )}
+                                  </p>
+                                </div>
+                              )}
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
+                      )}
                     </TabsContent>
 
                     <TabsContent value="tratamientos" className="space-y-4">
@@ -599,6 +788,118 @@ export function HistorialPacientesView() {
               />
             </div>
 
+            {/* NOM-024 Optional Fields - Collapsible Section */}
+            <Accordion type="single" collapsible className="border rounded-lg">
+              <AccordionItem value="nom024">
+                <AccordionTrigger className="px-4">
+                  <span className="text-sm font-medium">Datos Adicionales NOM-024 (Opcional)</span>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 space-y-4">
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Campos opcionales para cumplimiento normativo. No son requeridos pero facilitan reportes oficiales.
+                  </p>
+                  
+                  <div>
+                    <Label htmlFor="curp">
+                      CURP (Clave Única de Registro de Población)
+                    </Label>
+                    <Input
+                      id="curp"
+                      value={formData.curp}
+                      onChange={(e) => setFormData({ ...formData, curp: e.target.value.toUpperCase() })}
+                      placeholder="AAAA######HDFXXX##"
+                      maxLength={18}
+                      className="font-mono"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      18 caracteres - Opcional
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="estado_nacimiento">Estado de Nacimiento</Label>
+                      <Select
+                        value={formData.estado_nacimiento}
+                        onValueChange={(value) => setFormData({ ...formData, estado_nacimiento: value })}
+                      >
+                        <SelectTrigger id="estado_nacimiento">
+                          <SelectValue placeholder="Seleccionar estado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ESTADOS_MEXICO.map((estado) => (
+                            <SelectItem key={estado.codigo} value={estado.codigo}>
+                              {estado.nombre}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="nacionalidad">Nacionalidad</Label>
+                      <Input
+                        id="nacionalidad"
+                        value={formData.nacionalidad}
+                        onChange={(e) => setFormData({ ...formData, nacionalidad: e.target.value.toUpperCase() })}
+                        placeholder="MEX"
+                        maxLength={3}
+                        className="font-mono"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Código ISO (3 letras)
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">Residencia Actual</Label>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="estado_residencia" className="text-xs">Estado</Label>
+                        <Select
+                          value={formData.estado_residencia}
+                          onValueChange={(value) => setFormData({ ...formData, estado_residencia: value })}
+                        >
+                          <SelectTrigger id="estado_residencia">
+                            <SelectValue placeholder="Seleccionar" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ESTADOS_MEXICO.map((estado) => (
+                              <SelectItem key={estado.codigo} value={estado.codigo}>
+                                {estado.nombre}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="municipio_residencia" className="text-xs">Municipio</Label>
+                        <Input
+                          id="municipio_residencia"
+                          value={formData.municipio_residencia}
+                          onChange={(e) => setFormData({ ...formData, municipio_residencia: e.target.value })}
+                          placeholder="Nombre del municipio"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="localidad_residencia" className="text-xs">Localidad</Label>
+                      <Input
+                        id="localidad_residencia"
+                        value={formData.localidad_residencia}
+                        onChange={(e) => setFormData({ ...formData, localidad_residencia: e.target.value })}
+                        placeholder="Nombre de la localidad o colonia"
+                      />
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+
             <div className="flex gap-2 justify-end pt-4">
               <Button variant="outline" onClick={() => {
                 setIsCreateMode(false)
@@ -757,6 +1058,60 @@ export function HistorialPacientesView() {
                 rows={3}
               />
             </div>
+
+            {/* NOM-024 CIE-10 Fields - Collapsible Section */}
+            <Accordion type="single" collapsible className="border rounded-lg">
+              <AccordionItem value="nom024-codes">
+                <AccordionTrigger className="px-4">
+                  <span className="text-sm font-medium">Códigos de Diagnóstico NOM-024 (Opcional)</span>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 space-y-4">
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Códigos opcionales para reportes estadísticos y cumplimiento normativo. No son requeridos pero facilitan la trazabilidad.
+                  </p>
+                  
+                  <div>
+                    <Label htmlFor="diagnostico_codigo_cie10">
+                      Código de Diagnóstico CIE-10
+                    </Label>
+                    <Input
+                      id="diagnostico_codigo_cie10"
+                      value={evolucionForm.diagnostico_codigo_cie10}
+                      onChange={(e) => setEvolucionForm({ ...evolucionForm, diagnostico_codigo_cie10: e.target.value.toUpperCase() })}
+                      placeholder="Ej: M21.6 - Hallux valgus"
+                      className="font-mono"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Clasificación Internacional de Enfermedades (CIE-10)
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="procedimiento_codigo">
+                      Código de Procedimiento
+                    </Label>
+                    <Input
+                      id="procedimiento_codigo"
+                      value={evolucionForm.procedimiento_codigo}
+                      onChange={(e) => setEvolucionForm({ ...evolucionForm, procedimiento_codigo: e.target.value.toUpperCase() })}
+                      placeholder="Ej: QUIR-001 - Corrección de uña encarnada"
+                      className="font-mono"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Código del procedimiento realizado
+                    </p>
+                  </div>
+
+                  <div className="bg-blue-50 p-3 rounded-lg text-xs text-blue-900">
+                    <p className="font-medium mb-1">💡 Información</p>
+                    <p>
+                      Estos campos son opcionales pero útiles para generar reportes estadísticos y cumplir con normativas oficiales.
+                      En el futuro podrán tener autocompletado con el catálogo oficial CIE-10.
+                    </p>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
 
             <div className="flex gap-2 justify-end pt-4">
               <Button variant="outline" onClick={() => {
