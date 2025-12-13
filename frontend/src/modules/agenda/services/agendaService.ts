@@ -6,7 +6,7 @@ import { agendaServiceMock } from './agendaService.mock'
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'
 
 // Toggle between mock and real API
-export const USE_MOCK = true
+export const USE_MOCK = false
 
 const agendaServiceReal = {
   // Get all citas with filters

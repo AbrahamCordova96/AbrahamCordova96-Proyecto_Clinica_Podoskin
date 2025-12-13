@@ -38,6 +38,6 @@ export const authServiceReal = {
 
 import { authServiceMock } from './authService.mock';
 
-export const USE_MOCK = true;
+export const USE_MOCK = false;
 
 export const authService = USE_MOCK ? authServiceMock : authServiceReal;
