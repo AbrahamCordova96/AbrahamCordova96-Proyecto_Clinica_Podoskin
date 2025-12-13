@@ -76,6 +76,32 @@ class Paciente(Base):
     telefono = Column(Text, nullable=False)  # Mínimo 10 caracteres (validado en SQL)
     email = Column(Text)  # Validación de formato en SQL con regex
     
+    # ---------- NOM-024 Compliance Fields ----------
+    # Campos requeridos por NOM-024 Tabla 1 (Identificación de Pacientes)
+    # Todos son opcionales por ahora para no romper datos existentes
+    # Se harán obligatorios cuando se busque certificación oficial
+    
+    # CURP: Clave Única de Registro de Población (18 caracteres)
+    curp = Column(String(18), nullable=True, index=True, comment="Opcional ahora, será obligatorio para certificación NOM-024")
+    
+    # Separación de apellidos según NOM-024
+    segundo_apellido = Column(String(50), nullable=True, comment="Segundo apellido (NOM-024)")
+    
+    # Datos de nacimiento adicionales
+    estado_nacimiento = Column(String(2), nullable=True, comment="Código INEGI del estado de nacimiento")
+    
+    # Nacionalidad (ISO 3166-1 alpha-3)
+    nacionalidad = Column(String(3), nullable=True, default='MEX', comment="Código ISO de nacionalidad")
+    
+    # Datos de residencia (catálogos INEGI)
+    estado_residencia = Column(String(2), nullable=True, comment="Código INEGI del estado de residencia")
+    municipio_residencia = Column(String(3), nullable=True, comment="Código INEGI del municipio")
+    localidad_residencia = Column(String(4), nullable=True, comment="Código INEGI de la localidad")
+    
+    # Consentimiento para intercambio de información (NOM-024 interoperabilidad)
+    consentimiento_intercambio = Column(Boolean, default=False, comment="Consiente compartir datos con otras instituciones")
+    fecha_consentimiento = Column(Date, nullable=True, comment="Fecha del consentimiento informado")
+    
     # ---------- Auditoría ----------
     # Estos campos rastrean quién creó/modificó y cuándo
     fecha_registro = Column(TIMESTAMP(timezone=True), server_default=func.now())
@@ -253,6 +279,13 @@ class Tratamiento(Base):
     estado_tratamiento = Column(Text, default='En Curso')
     plan_general = Column(Text)  # Plan de tratamiento a seguir
     
+    # ---------- NOM-024 Compliance: Electronic Signature (Preparation) ----------
+    # Campos preparados para firma electrónica futura (FIEL, e.firma)
+    # Opcionales por ahora, se implementarán cuando haya trámites oficiales
+    firma_electronica = Column(Text, nullable=True, comment="Hash de firma electrónica - Futuro: FIEL/e.firma")
+    firma_timestamp = Column(TIMESTAMP(timezone=True), nullable=True, comment="Momento de la firma")
+    firma_tipo = Column(String(50), nullable=True, comment="Tipo: FIEL, e.firma, simple, etc.")
+    
     # ---------- Auditoría ----------
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -313,6 +346,13 @@ class EvolucionClinica(Base):
     #   "glucosa": 95                  // 50-400 mg/dL
     # }
     signos_vitales_visita = Column(JSONB)
+    
+    # ---------- NOM-024 Compliance: Electronic Signature (Preparation) ----------
+    # Campos preparados para firma electrónica futura (FIEL, e.firma)
+    # Cada nota clínica debería estar firmada digitalmente por el profesional
+    firma_electronica = Column(Text, nullable=True, comment="Hash de firma electrónica del podólogo")
+    firma_timestamp = Column(TIMESTAMP(timezone=True), nullable=True, comment="Momento de la firma")
+    firma_tipo = Column(String(50), nullable=True, comment="Tipo: FIEL, e.firma, simple, etc.")
     
     created_by = Column(BigInteger)  # FK virtual a auth.sys_usuarios
     
@@ -576,3 +616,100 @@ class ConversacionDigital(Base):
     
     # ---------- Relación ----------
     paciente = relationship("Paciente", backref="conversaciones_digitales")
+
+
+# =============================================================================
+# NOM-024 COMPLIANCE: Catálogos Oficiales (Preparación)
+# =============================================================================
+# Las siguientes tablas preparan la estructura para catálogos oficiales
+# que serán necesarios para certificación NOM-024.
+# Se dejan vacías o con datos genéricos por ahora.
+# =============================================================================
+
+class CatDiagnostico(Base):
+    """
+    Catálogo de diagnósticos según CIE-10 (Clasificación Internacional de Enfermedades).
+    
+    NOM-024 requiere que los diagnósticos estén codificados según estándares
+    internacionales para interoperabilidad.
+    
+    Por ahora, estructura preparada. Llenado de catálogo oficial será posterior.
+    """
+    __tablename__ = "cat_diagnosticos"
+    __table_args__ = {"schema": "clinic"}
+    
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    
+    # Código CIE-10: Ejemplo "B35.1" (Tiña de las uñas)
+    codigo_cie10 = Column(String(10), unique=True, nullable=False)
+    
+    # Descripción en español
+    descripcion = Column(String(500), nullable=False)
+    
+    # Categoría general (opcional, para búsquedas)
+    categoria = Column(String(100), nullable=True)
+    
+    # Estado activo/inactivo
+    activo = Column(Boolean, default=True)
+    
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
+
+class CatProcedimiento(Base):
+    """
+    Catálogo de procedimientos médicos.
+    
+    Estructura preparada para alojar códigos de procedimientos
+    podológicos y quirúrgicos según catálogos oficiales.
+    """
+    __tablename__ = "cat_procedimientos"
+    __table_args__ = {"schema": "clinic"}
+    
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    
+    # Código del procedimiento (formato dependerá del catálogo usado)
+    codigo = Column(String(20), unique=True, nullable=False)
+    
+    # Nombre del procedimiento
+    descripcion = Column(String(500), nullable=False)
+    
+    # Duración estimada en minutos (para agenda)
+    duracion_estimada_min = Column(Integer, nullable=True)
+    
+    activo = Column(Boolean, default=True)
+    
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
+
+class CatMedicamento(Base):
+    """
+    Catálogo de medicamentos según Cuadro Básico.
+    
+    NOM-024 recomienda usar claves del Cuadro Básico de Medicamentos
+    para recetas y prescripciones.
+    
+    Estructura preparada para integración futura.
+    """
+    __tablename__ = "cat_medicamentos"
+    __table_args__ = {"schema": "clinic"}
+    
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    
+    # Clave del Cuadro Básico (opcional si no se tiene)
+    clave_cuadro_basico = Column(String(20), nullable=True, unique=True)
+    
+    # Nombre genérico del medicamento
+    nombre_generico = Column(String(200), nullable=False)
+    
+    # Nombre comercial (opcional)
+    nombre_comercial = Column(String(200), nullable=True)
+    
+    # Presentación (tabletas, ampolletas, pomada, etc.)
+    presentacion = Column(String(100), nullable=True)
+    
+    # Concentración/dosis (ej: "500mg", "10ml")
+    concentracion = Column(String(50), nullable=True)
+    
+    activo = Column(Boolean, default=True)
+    
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
