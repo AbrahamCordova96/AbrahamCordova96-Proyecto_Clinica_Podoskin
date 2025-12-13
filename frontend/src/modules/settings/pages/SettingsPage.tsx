@@ -7,6 +7,7 @@
 
 import { Gear, UserCircle, Bell, Shield, Key } from '@phosphor-icons/react'
 import { GeminiKeySettings } from '../components/GeminiKeySettings'
+import { ProfessionalDataSettings } from '../components/ProfessionalDataSettings'
 import { useAuthStore } from '../../auth/stores/authStore'
 
 export const SettingsPage = () => {
@@ -74,6 +75,9 @@ export const SettingsPage = () => {
         <div className="lg:col-span-2 space-y-6">
           {/* Sección de API Keys de Gemini */}
           <GeminiKeySettings />
+
+          {/* Sección de Datos Profesionales (NOM-024) */}
+          <ProfessionalDataSettings />
 
           {/* Placeholder para otras configuraciones futuras */}
           <div className="bg-white rounded-lg shadow-sm p-6">
