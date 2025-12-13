@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expediente Clínico - {{ paciente.nombres }} {{ paciente.apellidos }}</title>
+    <style>
+        @media print {
+            .no-print {
+                display: none;
+            }
+            @page {
+                margin: 20mm;
+            }
+        }
+        
+        body {
+            font-family: 'Times New Roman', serif;
+            max-width: 210mm; /* A4 width */
+            margin: auto;
+            padding: 20mm;
+            background: #fff;
+            color: #333;
+            font-size: 12pt;
+            line-height: 1.6;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #2c3e50;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 24pt;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+        
+        .header .subtitle {
+            margin: 5px 0 0 0;
+            font-size: 14pt;
+            color: #7f8c8d;
+        }
+        
+        .header .clinic-info {
+            margin: 10px 0 0 0;
+            font-size: 10pt;
+            color: #95a5a6;
+        }
+        
+        .section {
+            margin-top: 25px;
+            page-break-inside: avoid;
+        }
+        
+        .section-title {
+            background: #34495e;
+            color: white;
+            padding: 8px 15px;
+            font-weight: bold;
+            font-size: 14pt;
+            border-left: 5px solid #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .info-item {
+            padding: 8px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: #7f8c8d;
+            font-size: 10pt;
+            text-transform: uppercase;
+        }
+        
+        .info-value {
+            color: #2c3e50;
+            font-size: 11pt;
+            margin-top: 3px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        
+        th, td {
+            border: 1px solid #bdc3c7;
+            padding: 10px;
+            text-align: left;
+        }
+        
+        th {
+            background: #ecf0f1;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .consulta {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #bdc3c7;
+            border-radius: 5px;
+            background: #fafafa;
+            page-break-inside: avoid;
+        }
+        
+        .consulta-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+        }
+        
+        .consulta-fecha {
+            font-weight: bold;
+            color: #2980b9;
+            font-size: 11pt;
+        }
+        
+        .consulta-medico {
+            color: #27ae60;
+            font-size: 10pt;
+        }
+        
+        .soap-section {
+            margin: 10px 0;
+        }
+        
+        .soap-label {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            text-align: center;
+            background: #3498db;
+            color: white;
+            font-weight: bold;
+            border-radius: 50%;
+            margin-right: 10px;
+            font-size: 14pt;
+        }
+        
+        .soap-content {
+            display: inline-block;
+            vertical-align: top;
+            width: calc(100% - 50px);
+            padding: 5px;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #bdc3c7;
+            text-align: center;
+            font-size: 9pt;
+            color: #95a5a6;
+        }
+        
+        .no-print {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .no-print button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 14pt;
+            cursor: pointer;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .no-print button:hover {
+            background: #2980b9;
+        }
+        
+        .alert-box {
+            padding: 12px;
+            margin: 10px 0;
+            border-left: 4px solid #e74c3c;
+            background: #fadbd8;
+            color: #c0392b;
+        }
+        
+        .metadata {
+            font-size: 9pt;
+            color: #95a5a6;
+            margin-top: 5px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <!-- Print Button -->
+    <div class="no-print">
+        <button onclick="window.print()">🖨️ Imprimir</button>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+        <h1>Expediente Clínico</h1>
+        <p class="subtitle">Clínica Podológica PodoSkin</p>
+        <p class="clinic-info">
+            NOM-024 Compliant | Documento generado: {{ fecha_generacion }}
+        </p>
+    </div>
+
+    <!-- Datos del Paciente -->
+    <div class="section">
+        <div class="section-title">📋 Datos del Paciente</div>
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">Nombre Completo</div>
+                <div class="info-value">{{ paciente.nombres }} {{ paciente.apellidos }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">CURP</div>
+                <div class="info-value">{{ paciente.curp or 'No registrado' }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Fecha de Nacimiento</div>
+                <div class="info-value">{{ paciente.fecha_nacimiento }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Edad</div>
+                <div class="info-value">{{ edad }} años</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Sexo</div>
+                <div class="info-value">{{ sexo_texto }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Teléfono</div>
+                <div class="info-value">{{ paciente.telefono }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Email</div>
+                <div class="info-value">{{ paciente.email or 'No registrado' }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Domicilio</div>
+                <div class="info-value">{{ paciente.domicilio or 'No registrado' }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historial Médico -->
+    {% if historial_medico %}
+    <div class="section">
+        <div class="section-title">🏥 Historial Médico General</div>
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">Peso</div>
+                <div class="info-value">{{ historial_medico.peso_kg }} kg</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Talla</div>
+                <div class="info-value">{{ historial_medico.talla_cm }} cm</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">IMC</div>
+                <div class="info-value">{{ historial_medico.imc }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Tipo de Sangre</div>
+                <div class="info-value">{{ historial_medico.tipos_sangre or 'No registrado' }}</div>
+            </div>
+        </div>
+        
+        {% if historial_medico.alergias_activas %}
+        <div class="alert-box">
+            <strong>⚠️ ALERGIAS ACTIVAS:</strong> {{ historial_medico.lista_alergias }}
+        </div>
+        {% endif %}
+        
+        <h4>Antecedentes Heredofamiliares:</h4>
+        <ul>
+            {% if historial_medico.ahf_diabetes %}<li>Diabetes Mellitus</li>{% endif %}
+            {% if historial_medico.ahf_hipertension %}<li>Hipertensión Arterial</li>{% endif %}
+            {% if historial_medico.ahf_cancer %}<li>Cáncer</li>{% endif %}
+            {% if historial_medico.ahf_cardiacas %}<li>Cardiopatías</li>{% endif %}
+            {% if not (historial_medico.ahf_diabetes or historial_medico.ahf_hipertension or historial_medico.ahf_cancer or historial_medico.ahf_cardiacas) %}
+            <li>Sin antecedentes heredofamiliares relevantes</li>
+            {% endif %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Tratamientos -->
+    {% if tratamientos %}
+    <div class="section">
+        <div class="section-title">💊 Tratamientos Registrados</div>
+        {% for tratamiento in tratamientos %}
+        <table>
+            <tr>
+                <th>Motivo de Consulta</th>
+                <td>{{ tratamiento.motivo_consulta_principal }}</td>
+            </tr>
+            <tr>
+                <th>Diagnóstico Inicial</th>
+                <td>{{ tratamiento.diagnostico_inicial or 'Pendiente' }}</td>
+            </tr>
+            <tr>
+                <th>Fecha de Inicio</th>
+                <td>{{ tratamiento.fecha_inicio }}</td>
+            </tr>
+            <tr>
+                <th>Estado</th>
+                <td>{{ tratamiento.estado_tratamiento }}</td>
+            </tr>
+            <tr>
+                <th>Plan General</th>
+                <td>{{ tratamiento.plan_general or 'No especificado' }}</td>
+            </tr>
+        </table>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Evoluciones Clínicas (Notas SOAP) -->
+    {% if evoluciones %}
+    <div class="section">
+        <div class="section-title">📝 Historial de Consultas (Notas SOAP)</div>
+        {% for evolucion in evoluciones %}
+        <div class="consulta">
+            <div class="consulta-header">
+                <div class="consulta-fecha">📅 {{ evolucion.fecha_visita }}</div>
+                <div class="consulta-medico">👨‍⚕️ {{ evolucion.podologo_nombre or 'No especificado' }}</div>
+            </div>
+            
+            {% if evolucion.nota_subjetiva %}
+            <div class="soap-section">
+                <span class="soap-label">S</span>
+                <div class="soap-content">
+                    <strong>Subjetivo:</strong> {{ evolucion.nota_subjetiva }}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if evolucion.nota_objetiva %}
+            <div class="soap-section">
+                <span class="soap-label">O</span>
+                <div class="soap-content">
+                    <strong>Objetivo:</strong> {{ evolucion.nota_objetiva }}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if evolucion.analisis_texto %}
+            <div class="soap-section">
+                <span class="soap-label">A</span>
+                <div class="soap-content">
+                    <strong>Análisis:</strong> {{ evolucion.analisis_texto }}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if evolucion.plan_texto %}
+            <div class="soap-section">
+                <span class="soap-label">P</span>
+                <div class="soap-content">
+                    <strong>Plan:</strong> {{ evolucion.plan_texto }}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if evolucion.signos_vitales_visita %}
+            <div class="metadata">
+                Signos vitales: {{ evolucion.signos_vitales_visita }}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>
+            Este documento es un expediente clínico electrónico generado automáticamente.<br>
+            Cumple con los requisitos de NOM-024-SSA3-2012 y NOM-004-SSA3-2012.<br>
+            Fecha de generación: {{ fecha_generacion }}<br>
+            ID de Expediente: {{ paciente.id_paciente }}
+        </p>
+        <p class="metadata">
+            Documento confidencial. Uso exclusivo para fines clínicos y legales.
+        </p>
+    </div>
+</body>
+</html>

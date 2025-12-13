@@ -116,6 +116,10 @@ class Settings(BaseSettings):
     # 4. Tener backup seguro (si se pierde, las API Keys no se pueden recuperar)
     ENCRYPTION_KEY: str = "TU_CLAVE_FERNET_AQUI_CAMBIAR_EN_PRODUCCION"
     
+    # ========== Templates (NOM-024) ==========
+    # Template directory for HTML exports
+    TEMPLATES_DIR: Path = _BACKEND_DIR / "templates"
+    
     class Config:
         # Archivo .env - ruta absoluta calculada arriba
         env_file = str(_ENV_FILE)

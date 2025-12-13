@@ -59,6 +59,11 @@ class Podologo(Base):
     especialidad = Column(Text, default='Podología General')
     activo = Column(Boolean, default=True)
     
+    # NOM-024 Compliance: Professional identification
+    # Opcionales ahora, serán obligatorios para reportes oficiales
+    institucion_titulo = Column(String(200), nullable=True, comment="Institución que otorgó el título profesional - NOM-024")
+    # cedula_profesional ya existe arriba, pero aseguramos que sea para NOM-024
+    
     # ---------- Auditoría ----------
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())

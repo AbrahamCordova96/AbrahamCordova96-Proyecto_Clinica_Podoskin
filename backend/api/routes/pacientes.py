@@ -25,7 +25,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
 from pydantic import BaseModel, Field, EmailStr
 
-from backend.api.deps.database import get_core_db
+from backend.api.deps.database import get_core_db, get_ops_db
 from backend.api.deps.permissions import (
     require_role, 
     ALL_ROLES, 
@@ -554,3 +554,96 @@ async def export_patient_pdf(
             "Content-Disposition": f"attachment; filename={filename}"
         }
     )
+
+
+# =============================================================================
+# NOM-024 COMPLIANCE: EXPORTAR EXPEDIENTE COMPLETO
+# =============================================================================
+# Endpoint para exportar el expediente completo de un paciente en múltiples formatos
+# Requerido por NOM-024 para interoperabilidad y entrega de copias al paciente
+# =============================================================================
+
+@router.get("/{paciente_id}/exportar", dependencies=[Depends(require_role(CLINICAL_ROLES))])
+async def exportar_expediente_completo(
+    paciente_id: int,
+    formato: str = Query("html", regex="^(html|json|xml)$", description="Formato de exportación: html, json, xml"),
+    core_db: Session = Depends(get_core_db),
+    ops_db: Session = Depends(get_ops_db)
+):
+    """
+    Exporta el expediente clínico completo de un paciente.
+    
+    **NOM-024 Compliance**: Este endpoint cumple con los requisitos de:
+    - Exportación de expedientes completos
+    - Formatos estándar (HTML para lectura, JSON/XML para intercambio)
+    - Preparación para interoperabilidad futura
+    
+    **Formatos disponibles**:
+    - `html`: Documento elegante listo para imprimir (recomendado para pacientes)
+    - `json`: Estructura preparada para HL7 CDA (para sistemas)
+    - `xml`: Formato XML básico (preparación para estándares)
+    
+    **Permisos**: Admin y Podólogo (no Recepción, por contener datos clínicos)
+    
+    **Incluye**:
+    - Datos personales del paciente
+    - Historial médico completo
+    - Todos los tratamientos registrados
+    - Todas las evoluciones clínicas (notas SOAP)
+    - Signos vitales históricos
+    """
+    from backend.api.utils.expediente_export import (
+        exportar_expediente_html,
+        exportar_expediente_json,
+        exportar_expediente_xml
+    )
+    from fastapi.responses import HTMLResponse, JSONResponse, Response
+    
+    # Verificar que el paciente existe
+    paciente = core_db.query(Paciente).filter_by(id_paciente=paciente_id).first()
+    if not paciente:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Paciente con ID {paciente_id} no encontrado"
+        )
+    
+    try:
+        if formato == "html":
+            # Exportar como HTML elegante
+            html_content = exportar_expediente_html(core_db, ops_db, paciente_id)
+            
+            return HTMLResponse(
+                content=html_content,
+                headers={
+                    "Content-Disposition": f"inline; filename=expediente_{paciente_id}.html"
+                }
+            )
+        
+        elif formato == "json":
+            # Exportar como JSON estructurado (HL7-like)
+            json_data = exportar_expediente_json(core_db, ops_db, paciente_id)
+            
+            return JSONResponse(
+                content=json_data,
+                headers={
+                    "Content-Disposition": f"attachment; filename=expediente_{paciente_id}.json"
+                }
+            )
+        
+        elif formato == "xml":
+            # Exportar como XML (preparación para HL7 CDA)
+            xml_content = exportar_expediente_xml(core_db, ops_db, paciente_id)
+            
+            return Response(
+                content=xml_content,
+                media_type="application/xml",
+                headers={
+                    "Content-Disposition": f"attachment; filename=expediente_{paciente_id}.xml"
+                }
+            )
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error exportando expediente: {str(e)}"
+        )
