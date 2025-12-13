@@ -56,6 +56,12 @@ class Paciente(Base):
     id_paciente = Column(BigInteger, primary_key=True, autoincrement=True)
     id_clinica = Column(BigInteger, default=1)  # Multi-tenant: a qué clínica pertenece
     
+    # Código interno estructurado: RENO-1213-00001
+    # Formato: [2 letras apellido][2 letras nombre]-[MMDD]-[contador]
+    # Se genera automáticamente al crear el paciente
+    codigo_interno = Column(String(20), unique=True, nullable=True, index=True, 
+                           comment="Código interno estructurado generado automáticamente")
+    
     # ---------- Datos Personales ----------
     # Nombres y apellidos separados para búsquedas más precisas
     nombres = Column(Text, nullable=False)
