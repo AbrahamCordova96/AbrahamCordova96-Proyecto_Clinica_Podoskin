@@ -11,6 +11,13 @@ export interface Paciente {
   activo: boolean
   created_at: string
   updated_at: string
+  // NOM-024 optional fields
+  curp?: string
+  estado_nacimiento?: string
+  nacionalidad?: string
+  estado_residencia?: string
+  municipio_residencia?: string
+  localidad_residencia?: string
 }
 
 export interface PacienteCreateInput {
@@ -22,6 +29,13 @@ export interface PacienteCreateInput {
   email?: string
   domicilio?: string
   documento_id?: string
+  // NOM-024 optional fields
+  curp?: string
+  estado_nacimiento?: string
+  nacionalidad?: string
+  estado_residencia?: string
+  municipio_residencia?: string
+  localidad_residencia?: string
 }
 
 export interface PacienteUpdateInput {
@@ -34,6 +48,13 @@ export interface PacienteUpdateInput {
   domicilio?: string
   documento_id?: string
   activo?: boolean
+  // NOM-024 optional fields
+  curp?: string
+  estado_nacimiento?: string
+  nacionalidad?: string
+  estado_residencia?: string
+  municipio_residencia?: string
+  localidad_residencia?: string
 }
 
 export interface PacienteFilters {
@@ -93,6 +114,9 @@ export interface Evolucion {
   tipo_visita?: string
   signos_vitales?: Record<string, any>
   created_at: string
+  // NOM-024 optional fields
+  diagnostico_codigo_cie10?: string
+  procedimiento_codigo?: string
 }
 
 export interface EvolucionCreateInput {
@@ -102,6 +126,9 @@ export interface EvolucionCreateInput {
   nota: string
   tipo_visita?: string
   signos_vitales?: Record<string, any>
+  // NOM-024 optional fields
+  diagnostico_codigo_cie10?: string
+  procedimiento_codigo?: string
 }
 
 export interface EvolucionUpdateInput {
@@ -109,6 +136,9 @@ export interface EvolucionUpdateInput {
   nota?: string
   tipo_visita?: string
   signos_vitales?: Record<string, any>
+  // NOM-024 optional fields
+  diagnostico_codigo_cie10?: string
+  procedimiento_codigo?: string
 }
 
 export type EvidenciaTipo = 'foto' | 'radiografia'
@@ -132,6 +162,9 @@ export interface Podologo {
   disponibilidad?: Record<string, any>
   contacto?: string
   activo: boolean
+  // NOM-024 professional data
+  cedula_profesional?: string
+  institucion_emisora?: string
 }
 
 export interface Cita {

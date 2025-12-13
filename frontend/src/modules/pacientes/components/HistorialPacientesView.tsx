@@ -9,10 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { MagnifyingGlass, Plus, User, Phone, EnvelopeSimple, MapPin, IdentificationCard, CalendarBlank } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { usePacientesStore } from '../stores/pacientesStore'
 import { calculateAge } from '../utils/pacientes.utils'
+import { ESTADOS_MEXICO, getCURPValidationMessage } from '../constants/nom024-catalogos'
 import type { Paciente, TratamientoEstado, TratamientoCreateInput, EvolucionCreateInput, PacienteCreateInput } from '../types/pacientes.types'
 
 export function HistorialPacientesView() {
@@ -74,7 +76,14 @@ export function HistorialPacientesView() {
     telefono: '',
     email: '',
     domicilio: '',
-    documento_id: ''
+    documento_id: '',
+    // NOM-024 optional fields
+    curp: '',
+    estado_nacimiento: '',
+    nacionalidad: 'MEX',
+    estado_residencia: '',
+    municipio_residencia: '',
+    localidad_residencia: ''
   })
 
   const [tratamientoForm, setTratamientoForm] = useState<TratamientoCreateInput>({
@@ -108,7 +117,14 @@ export function HistorialPacientesView() {
       telefono: '',
       email: '',
       domicilio: '',
-      documento_id: ''
+      documento_id: '',
+      // NOM-024 optional fields
+      curp: '',
+      estado_nacimiento: '',
+      nacionalidad: 'MEX',
+      estado_residencia: '',
+      municipio_residencia: '',
+      localidad_residencia: ''
     })
     setIsCreateMode(true)
   }
@@ -123,12 +139,28 @@ export function HistorialPacientesView() {
       telefono: selectedPaciente.telefono,
       email: selectedPaciente.email || '',
       domicilio: selectedPaciente.domicilio || '',
-      documento_id: selectedPaciente.documento_id || ''
+      documento_id: selectedPaciente.documento_id || '',
+      // NOM-024 optional fields
+      curp: selectedPaciente.curp || '',
+      estado_nacimiento: selectedPaciente.estado_nacimiento || '',
+      nacionalidad: selectedPaciente.nacionalidad || 'MEX',
+      estado_residencia: selectedPaciente.estado_residencia || '',
+      municipio_residencia: selectedPaciente.municipio_residencia || '',
+      localidad_residencia: selectedPaciente.localidad_residencia || ''
     })
     setIsEditMode(true)
   }
 
   const handleSavePaciente = async () => {
+    // Validate CURP if provided
+    if (formData.curp) {
+      const curpError = getCURPValidationMessage(formData.curp.toUpperCase())
+      if (curpError) {
+        toast.warning(curpError + ' (campo opcional)')
+        // Don't block save, just warn
+      }
+    }
+    
     if (isEditMode && selectedPaciente) {
       const result = await updatePaciente(selectedPaciente.id_paciente, formData)
       if (result) {
@@ -385,6 +417,57 @@ export function HistorialPacientesView() {
                         </div>
                         <p className="text-foreground font-medium">{selectedPaciente.domicilio || 'No registrado'}</p>
                       </div>
+
+                      {/* NOM-024 Fields Display - Collapsible */}
+                      {(selectedPaciente.curp || selectedPaciente.estado_nacimiento || selectedPaciente.nacionalidad || 
+                        selectedPaciente.estado_residencia) && (
+                        <Accordion type="single" collapsible className="border-t pt-4 mt-4">
+                          <AccordionItem value="nom024-display" className="border-none">
+                            <AccordionTrigger className="py-2">
+                              <span className="text-sm font-medium text-muted-foreground">Datos NOM-024</span>
+                            </AccordionTrigger>
+                            <AccordionContent className="space-y-3 pt-2">
+                              {selectedPaciente.curp && (
+                                <div className="space-y-1">
+                                  <p className="text-xs text-muted-foreground">CURP</p>
+                                  <p className="text-sm font-mono font-medium">{selectedPaciente.curp}</p>
+                                </div>
+                              )}
+                              
+                              {selectedPaciente.estado_nacimiento && (
+                                <div className="space-y-1">
+                                  <p className="text-xs text-muted-foreground">Estado de Nacimiento</p>
+                                  <p className="text-sm font-medium">
+                                    {ESTADOS_MEXICO.find(e => e.codigo === selectedPaciente.estado_nacimiento)?.nombre || selectedPaciente.estado_nacimiento}
+                                  </p>
+                                </div>
+                              )}
+
+                              {selectedPaciente.nacionalidad && (
+                                <div className="space-y-1">
+                                  <p className="text-xs text-muted-foreground">Nacionalidad</p>
+                                  <p className="text-sm font-medium">{selectedPaciente.nacionalidad}</p>
+                                </div>
+                              )}
+
+                              {(selectedPaciente.estado_residencia || selectedPaciente.municipio_residencia || 
+                                selectedPaciente.localidad_residencia) && (
+                                <div className="space-y-1">
+                                  <p className="text-xs text-muted-foreground">Residencia</p>
+                                  <p className="text-sm font-medium">
+                                    {selectedPaciente.localidad_residencia && `${selectedPaciente.localidad_residencia}, `}
+                                    {selectedPaciente.municipio_residencia && `${selectedPaciente.municipio_residencia}, `}
+                                    {selectedPaciente.estado_residencia && (
+                                      ESTADOS_MEXICO.find(e => e.codigo === selectedPaciente.estado_residencia)?.nombre || 
+                                      selectedPaciente.estado_residencia
+                                    )}
+                                  </p>
+                                </div>
+                              )}
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
+                      )}
                     </TabsContent>
 
                     <TabsContent value="tratamientos" className="space-y-4">
@@ -598,6 +681,118 @@ export function HistorialPacientesView() {
                 rows={3}
               />
             </div>
+
+            {/* NOM-024 Optional Fields - Collapsible Section */}
+            <Accordion type="single" collapsible className="border rounded-lg">
+              <AccordionItem value="nom024">
+                <AccordionTrigger className="px-4">
+                  <span className="text-sm font-medium">Datos Adicionales NOM-024 (Opcional)</span>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 space-y-4">
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Campos opcionales para cumplimiento normativo. No son requeridos pero facilitan reportes oficiales.
+                  </p>
+                  
+                  <div>
+                    <Label htmlFor="curp">
+                      CURP (Clave Única de Registro de Población)
+                    </Label>
+                    <Input
+                      id="curp"
+                      value={formData.curp}
+                      onChange={(e) => setFormData({ ...formData, curp: e.target.value.toUpperCase() })}
+                      placeholder="AAAA######HDFXXX##"
+                      maxLength={18}
+                      className="font-mono"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      18 caracteres - Opcional
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="estado_nacimiento">Estado de Nacimiento</Label>
+                      <Select
+                        value={formData.estado_nacimiento}
+                        onValueChange={(value) => setFormData({ ...formData, estado_nacimiento: value })}
+                      >
+                        <SelectTrigger id="estado_nacimiento">
+                          <SelectValue placeholder="Seleccionar estado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ESTADOS_MEXICO.map((estado) => (
+                            <SelectItem key={estado.codigo} value={estado.codigo}>
+                              {estado.nombre}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="nacionalidad">Nacionalidad</Label>
+                      <Input
+                        id="nacionalidad"
+                        value={formData.nacionalidad}
+                        onChange={(e) => setFormData({ ...formData, nacionalidad: e.target.value.toUpperCase() })}
+                        placeholder="MEX"
+                        maxLength={3}
+                        className="font-mono"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Código ISO (3 letras)
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">Residencia Actual</Label>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="estado_residencia" className="text-xs">Estado</Label>
+                        <Select
+                          value={formData.estado_residencia}
+                          onValueChange={(value) => setFormData({ ...formData, estado_residencia: value })}
+                        >
+                          <SelectTrigger id="estado_residencia">
+                            <SelectValue placeholder="Seleccionar" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ESTADOS_MEXICO.map((estado) => (
+                              <SelectItem key={estado.codigo} value={estado.codigo}>
+                                {estado.nombre}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="municipio_residencia" className="text-xs">Municipio</Label>
+                        <Input
+                          id="municipio_residencia"
+                          value={formData.municipio_residencia}
+                          onChange={(e) => setFormData({ ...formData, municipio_residencia: e.target.value })}
+                          placeholder="Nombre del municipio"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="localidad_residencia" className="text-xs">Localidad</Label>
+                      <Input
+                        id="localidad_residencia"
+                        value={formData.localidad_residencia}
+                        onChange={(e) => setFormData({ ...formData, localidad_residencia: e.target.value })}
+                        placeholder="Nombre de la localidad o colonia"
+                      />
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
 
             <div className="flex gap-2 justify-end pt-4">
               <Button variant="outline" onClick={() => {
