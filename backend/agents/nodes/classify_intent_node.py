@@ -25,6 +25,7 @@ from backend.agents.state import (
     add_log_entry,
 )
 from backend.tools.schema_info import ENTITY_TO_TABLE
+from backend.agents.maya_personality import enhance_prompt_with_maya_personality
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -34,7 +35,7 @@ settings = get_settings()
 # PROMPTS PARA CLASIFICACIÓN
 # =============================================================================
 
-CLASSIFICATION_SYSTEM_PROMPT = """Eres un clasificador de intenciones para un sistema de gestión clínica podológica (PodoSkin).
+CLASSIFICATION_SYSTEM_PROMPT_BASE = """Eres un clasificador de intenciones para un sistema de gestión clínica podológica (PodoSkin).
 
 Tu tarea es analizar la consulta del usuario y determinar:
 1. El tipo de intención
@@ -122,11 +123,19 @@ def classify_intent(state: AgentState) -> AgentState:
         from datetime import datetime
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
         
+        # ✨ NUEVO: Mejorar prompt con personalidad de Maya
+        user_name = state.get("user_name")
+        enhanced_system_prompt = enhance_prompt_with_maya_personality(
+            CLASSIFICATION_SYSTEM_PROMPT_BASE,
+            user_name=user_name,
+            user_role=user_role
+        )
+        
         response = client.messages.create(
             model=settings.CLAUDE_MODEL,
             max_tokens=500,
             temperature=0.0,  # Determinístico para clasificación
-            system=CLASSIFICATION_SYSTEM_PROMPT,
+            system=enhanced_system_prompt,
             messages=[{
                 "role": "user",
                 "content": CLASSIFICATION_USER_TEMPLATE.format(
