@@ -114,12 +114,17 @@ def _handle_no_results(state: AgentState) -> AgentState:
     """
     Maneja el caso de consulta exitosa pero sin resultados.
     
-    Intenta buscar sugerencias usando búsqueda difusa.
+    Intenta buscar sugerencias usando búsqueda difusa solo en campos relevantes.
+    Si no hay sugerencias, deja que el LLM explique la ausencia de datos
+    (útil para consultas de disponibilidad o "no hay citas").
     """
     entities = state.get("entities_extracted", {})
     suggestions = []
     
-    # Buscar sugerencias basadas en las entidades
+    # Lista de claves sospechosas para búsqueda de nombres
+    fuzzy_target_keys = ["nombre", "paciente", "persona", "doctor", "podologo", "usuario"]
+    
+    # Buscar sugerencias basándose en las entidades clave
     if "nombre_paciente" in entities:
         nombre = entities["nombre_paciente"]
         matches = fuzzy_search_patient(nombre, threshold=0.3, limit=3)
@@ -127,12 +132,22 @@ def _handle_no_results(state: AgentState) -> AgentState:
             suggestions = [m["nombre_completo"] for m in matches]
     
     if not suggestions:
-        # Buscar en otros campos extraídos
+        # Buscar en otros campos extraídos de forma segura
         for key, value in entities.items():
             if key.startswith("_"):
                 continue
-            if isinstance(value, str) and len(value) > 2:
+            
+            # Solo buscar si la clave parece ser un nombre
+            is_target_key = any(t in key.lower() for t in fuzzy_target_keys)
+            
+            # Y si el valor parece un nombre (no una fecha)
+            # Evitar buscar fechas como "2024-01-01"
+            import re
+            is_date = bool(re.search(r'\d{4}-\d{2}-\d{2}', str(value)))
+            
+            if is_target_key and isinstance(value, str) and len(value) > 2 and not is_date:
                 # Intentar búsqueda genérica
+                logger.info(f"Intentando búsqueda difusa para entidad '{key}': {value}")
                 patient_matches = fuzzy_search_patient(value, threshold=0.3, limit=3)
                 if patient_matches:
                     suggestions = [m["nombre_completo"] for m in patient_matches]
@@ -147,12 +162,11 @@ def _handle_no_results(state: AgentState) -> AgentState:
         )
         add_log_entry(state, "execute_sql", f"Sugerencias encontradas: {suggestions}")
     else:
-        state["error_type"] = ErrorType.NO_RESULTS
-        state["error_user_message"] = (
-            "📭 No encontré información que coincida.\n\n"
-            "Verifica que los datos estén escritos correctamente."
-        )
-        add_log_entry(state, "execute_sql", "Sin resultados ni sugerencias")
+        # ✅ CAMBIO: No marcar como error si no hay resultados.
+        # Permitir que el LLM decida cómo comunicar "0 resultados".
+        # Esto es vital para preguntas como "¿Hay citas?" -> 0 resultados = "No, está libre".
+        state["error_type"] = ErrorType.NONE
+        add_log_entry(state, "execute_sql", "Sin resultados ni sugerencias. Delegando a LLM.")
     
     return state
 

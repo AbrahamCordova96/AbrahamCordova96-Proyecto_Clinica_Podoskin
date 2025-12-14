@@ -149,11 +149,14 @@ def generate_response(state: AgentState) -> AgentState:
         state["node_path"] = state.get("node_path", []) + ["generate_response"]
         return state
 
-    # Si hay pocos resultados, formatear directamente
-    if result.row_count <= 5:
+    # Si hay pocos resultados (pero al menos 1), formatear directamente para velocidad
+    if 0 < result.row_count <= 5:
         state["response_text"] = _format_simple_results(state, result)
     else:
-        # Usar LLM para formatear resultados más complejos
+        # Caso: 0 resultados o > 5 resultados.
+        # Usar LLM para:
+        # a) Explicar amigablemente que no hubo resultados (ej: "No hay citas, el día está libre")
+        # b) Resumir grandes cantidades de datos
         state["response_text"] = _format_with_llm(state, result)
 
     # Guardar datos estructurados para UI
@@ -400,7 +403,16 @@ def _format_with_llm(state: AgentState, result: ExecutionResult) -> str:
             user_role=user_role,
             is_known_user=False  # Por ahora, no tenemos esta info
         )
-        system_prompt += "\n\n" + RESPONSE_SYSTEM_PROMPT_BASE
+        
+        # Add specific instruction for data presentation based on previous template logic
+        system_prompt += """
+        
+## Tarea Actual: Presentar Resultados
+Tienes datos crudos de la base de datos.
+1. Analízalos.
+2. Preséntalos usando tu personalidad (Recuerda tu rol según el usuario).
+3. Termina con una sugerencia relevante.
+"""
         
         response = client.messages.create(
             model=settings.CLAUDE_MODEL,
