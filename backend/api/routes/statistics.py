@@ -124,7 +124,9 @@ async def get_dashboard_statistics(
     last_month_start = (month_start - timedelta(days=1)).replace(day=1)
     
     # Filter by clinic if user has one
-    clinic_filter_core = Paciente.id_clinica == current_user.clinica_id if current_user.clinica_id else True
+    # Separate filters for different models to avoid cartesian product
+    clinic_filter_paciente = Paciente.id_clinica == current_user.clinica_id if current_user.clinica_id else True
+    clinic_filter_tratamiento = Tratamiento.id_clinica == current_user.clinica_id if current_user.clinica_id else True
     clinic_filter_ops = Cita.id_clinica == current_user.clinica_id if current_user.clinica_id else True
     
     # =============================================================================
@@ -133,24 +135,24 @@ async def get_dashboard_statistics(
     
     total_patients = core_db.query(func.count(Paciente.id_paciente)).filter(
         Paciente.deleted_at.is_(None),
-        clinic_filter_core
+        clinic_filter_paciente
     ).scalar() or 0
     
     active_patients = core_db.query(func.count(Paciente.id_paciente)).filter(
         Paciente.deleted_at.is_(None),
-        clinic_filter_core,
+        clinic_filter_paciente,
         Paciente.fecha_registro >= month_start
     ).scalar() or 0
     
     new_patients_this_month = core_db.query(func.count(Paciente.id_paciente)).filter(
         Paciente.deleted_at.is_(None),
-        clinic_filter_core,
+        clinic_filter_paciente,
         func.date(Paciente.fecha_registro) >= month_start
     ).scalar() or 0
     
     new_patients_last_month = core_db.query(func.count(Paciente.id_paciente)).filter(
         Paciente.deleted_at.is_(None),
-        clinic_filter_core,
+        clinic_filter_paciente,
         func.date(Paciente.fecha_registro) >= last_month_start,
         func.date(Paciente.fecha_registro) < month_start
     ).scalar() or 0
@@ -161,7 +163,7 @@ async def get_dashboard_statistics(
         func.count(Paciente.id_paciente)
     ).filter(
         Paciente.deleted_at.is_(None),
-        clinic_filter_core,
+        clinic_filter_paciente,
         Paciente.sexo.isnot(None)
     ).group_by(Paciente.sexo).all()
     
@@ -171,7 +173,7 @@ async def get_dashboard_statistics(
     # Get birth dates and calculate age in Python for better compatibility
     patients_with_birth = core_db.query(Paciente.fecha_nacimiento).filter(
         Paciente.deleted_at.is_(None),
-        clinic_filter_core,
+        clinic_filter_paciente,
         Paciente.fecha_nacimiento.isnot(None)
     ).all()
     
@@ -247,21 +249,21 @@ async def get_dashboard_statistics(
     # =============================================================================
     
     total_treatments = core_db.query(func.count(Tratamiento.id_tratamiento)).filter(
-        clinic_filter_core
+        clinic_filter_tratamiento
     ).scalar() or 0
     
     active_treatments = core_db.query(func.count(Tratamiento.id_tratamiento)).filter(
-        clinic_filter_core,
+        clinic_filter_tratamiento,
         Tratamiento.estado == "activo"
     ).scalar() or 0
     
     completed_treatments = core_db.query(func.count(Tratamiento.id_tratamiento)).filter(
-        clinic_filter_core,
+        clinic_filter_tratamiento,
         Tratamiento.estado == "completado"
     ).scalar() or 0
     
     treatments_this_month = core_db.query(func.count(Tratamiento.id_tratamiento)).filter(
-        clinic_filter_core,
+        clinic_filter_tratamiento,
         func.date(Tratamiento.fecha_inicio) >= month_start
     ).scalar() or 0
     
@@ -271,7 +273,7 @@ async def get_dashboard_statistics(
             func.extract('day', Tratamiento.fecha_fin - Tratamiento.fecha_inicio)
         )
     ).filter(
-        clinic_filter_core,
+        clinic_filter_tratamiento,
         Tratamiento.fecha_fin.isnot(None),
         Tratamiento.estado == "completado"
     ).scalar()
@@ -409,18 +411,19 @@ async def get_statistics_summary(
     Returns a lightweight summary with the most important metrics.
     """
     today = date.today()
-    clinic_filter_core = Paciente.id_clinica == current_user.clinica_id if current_user.clinica_id else True
+    clinic_filter_paciente = Paciente.id_clinica == current_user.clinica_id if current_user.clinica_id else True
+    clinic_filter_tratamiento = Tratamiento.id_clinica == current_user.clinica_id if current_user.clinica_id else True
     clinic_filter_ops = Cita.id_clinica == current_user.clinica_id if current_user.clinica_id else True
     
     return {
         "total_patients": core_db.query(func.count(Paciente.id_paciente)).filter(
-            Paciente.deleted_at.is_(None), clinic_filter_core
+            Paciente.deleted_at.is_(None), clinic_filter_paciente
         ).scalar() or 0,
         "appointments_today": ops_db.query(func.count(Cita.id_cita)).filter(
             clinic_filter_ops, Cita.fecha_cita == today
         ).scalar() or 0,
         "active_treatments": core_db.query(func.count(Tratamiento.id_tratamiento)).filter(
-            clinic_filter_core, Tratamiento.estado == "activo"
+            clinic_filter_tratamiento, Tratamiento.estado == "activo"
         ).scalar() or 0,
         "generated_at": datetime.now(timezone.utc)
     }
