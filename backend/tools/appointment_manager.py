@@ -378,8 +378,13 @@ class AppointmentManager:
             if not fecha_fin:
                 fecha_fin = fecha_inicio + timedelta(days=7)
             
-            # Query con JOINs para obtener información completa
-            query = text("""
+            # =========================================================================
+            # QUERY PASO 1: Obtener citas (ops.citas) con JOINs dentro de la misma BD
+            # =========================================================================
+            # No podemos hacer JOIN entre ops.citas y clinic.pacientes porque están 
+            # en bases de datos diferentes. Hacemos queries separadas.
+            
+            query_citas = text("""
                 SELECT 
                     c.id_cita,
                     c.fecha_cita,
@@ -387,21 +392,17 @@ class AppointmentManager:
                     c.hora_fin,
                     c.status,
                     c.notas_agendamiento,
-                    p.id_paciente,
-                    p.nombres || ' ' || p.apellidos as paciente_nombre,
-                    p.telefono as paciente_telefono,
-                    pod.id_podologo,
+                    c.paciente_id,
+                    c.podologo_id,
+                    c.servicio_id,
+                    c.created_at,
                     pod.nombre_completo as podologo_nombre,
-                    s.id_servicio,
                     s.nombre_servicio,
-                    s.precio_base,
-                    c.created_at
+                    s.precio_base
                 FROM ops.citas c
-                JOIN clinic.pacientes p ON c.paciente_id = p.id_paciente
                 JOIN ops.podologos pod ON c.podologo_id = pod.id_podologo
                 LEFT JOIN ops.catalogo_servicios s ON c.servicio_id = s.id_servicio
                 WHERE c.deleted_at IS NULL
-                    AND p.deleted_at IS NULL
                     AND pod.deleted_at IS NULL
                     AND c.fecha_cita BETWEEN :fecha_inicio AND :fecha_fin
                     AND (:paciente_id IS NULL OR c.paciente_id = :paciente_id)
@@ -420,10 +421,50 @@ class AppointmentManager:
                 "limit": limit
             }
             
-            result = ops_db.execute(query, params)
+            result_citas = ops_db.execute(query_citas, params)
+            citas_raw = result_citas.fetchall()
+            
+            # =========================================================================
+            # QUERY PASO 2: Obtener datos de pacientes desde clinic.pacientes
+            # =========================================================================
+            # Extraer los IDs de pacientes que necesitamos
+            paciente_ids = list(set([row[6] for row in citas_raw]))  # row[6] es paciente_id
+            
+            pacientes_dict = {}
+            if paciente_ids:
+                # Query a clinic.pacientes para obtener nombres y teléfonos
+                query_pacientes = text("""
+                    SELECT 
+                        id_paciente,
+                        nombres || ' ' || apellidos as nombre_completo,
+                        telefono
+                    FROM clinic.pacientes
+                    WHERE id_paciente = ANY(:paciente_ids)
+                        AND deleted_at IS NULL
+                """)
+                
+                result_pacientes = core_db.execute(query_pacientes, {"paciente_ids": paciente_ids})
+                
+                for pac_row in result_pacientes.fetchall():
+                    pacientes_dict[pac_row[0]] = {
+                        "id": pac_row[0],
+                        "nombre": pac_row[1],
+                        "telefono": pac_row[2]
+                    }
+            
+            # =========================================================================
+            # PASO 3: Fusionar datos en memoria (application-level JOIN)
+            # =========================================================================
             citas = []
             
-            for row in result.fetchall():
+            for row in citas_raw:
+                paciente_id = row[6]
+                paciente_data = pacientes_dict.get(paciente_id, {
+                    "id": paciente_id,
+                    "nombre": "Paciente no encontrado",
+                    "telefono": "N/A"
+                })
+                
                 cita = {
                     "id_cita": row[0],
                     "fecha_cita": row[1].isoformat() if row[1] else None,
@@ -431,21 +472,17 @@ class AppointmentManager:
                     "hora_fin": row[3].strftime("%H:%M") if row[3] else None,
                     "status": row[4],
                     "notas": row[5],
-                    "paciente": {
-                        "id": row[6],
-                        "nombre": row[7],
-                        "telefono": row[8]
-                    },
+                    "paciente": paciente_data,
                     "podologo": {
-                        "id": row[9],
+                        "id": row[7],
                         "nombre": row[10]
                     },
                     "servicio": {
-                        "id": row[11],
-                        "nombre": row[12],
-                        "precio": float(row[13]) if row[13] else 0
+                        "id": row[8],
+                        "nombre": row[11],
+                        "precio": float(row[12]) if row[12] else 0
                     },
-                    "creada_en": row[14].isoformat() if row[14] else None
+                    "creada_en": row[9].isoformat() if row[9] else None
                 }
                 citas.append(cita)
             
