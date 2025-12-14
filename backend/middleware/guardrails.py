@@ -25,6 +25,7 @@ class GuardrailReason(str, Enum):
     PERMISSION_ESCALATION = "permission_escalation"  # Escalamiento de permisos
     UNUSUAL_REQUEST = "unusual_request"  # Solicitud inusual
     HIGH_RISK_ACTION = "high_risk_action"  # Acción de alto riesgo
+    SAFE_REQUEST = "safe_request"  # ✅ NUEVO: Solicitud segura sin problemas
 
 
 class GuardrailDecision(BaseModel):
@@ -159,7 +160,7 @@ class Guardrails:
         return GuardrailDecision(
             should_block=False,
             requires_human=False,
-            reason=GuardrailReason.CLINICAL_DIAGNOSIS,  # placeholder
+            reason=GuardrailReason.SAFE_REQUEST,  # ✅ Usar razón apropiada
             message="Solicitud válida",
             escalation_notes=None
         )
@@ -197,7 +198,7 @@ class Guardrails:
         return GuardrailDecision(
             should_block=False,
             requires_human=False,
-            reason=GuardrailReason.CLINICAL_DIAGNOSIS,  # placeholder
+            reason=GuardrailReason.SAFE_REQUEST,  # ✅ Usar razón apropiada
             message="Tool call válido",
             escalation_notes=None
         )

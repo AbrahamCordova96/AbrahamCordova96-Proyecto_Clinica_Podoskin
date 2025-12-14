@@ -253,13 +253,17 @@ async def chat(
         logger.exception(f"Error en chat endpoint: {e}")
         processing_time = (time.time() - start_time) * 1000
         
-        # ✅ FASE 2: Registrar error en observabilidad
+        # ✅ FASE 2: Registrar error en observabilidad (con sanitización)
+        # Sanitizar mensaje antes de logging
+        sanitized_message = chat_request.message[:100] if len(chat_request.message) > 100 else chat_request.message
+        sanitized_message = sanitized_message.replace('\n', ' ').replace('\r', ' ')
+        
         observability.log_error(
             error_type="CHAT_ENDPOINT_ERROR",
             error_message=str(e),
             user_id=current_user.id_usuario,
             context={
-                "message": chat_request.message[:100],
+                "message_length": len(chat_request.message),
                 "thread_id": chat_request.thread_id
             }
         )

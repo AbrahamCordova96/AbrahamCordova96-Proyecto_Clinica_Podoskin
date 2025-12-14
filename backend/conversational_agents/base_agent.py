@@ -10,6 +10,7 @@ from datetime import datetime
 from enum import Enum
 from pydantic import BaseModel, Field
 import logging
+import uuid
 
 from backend.middleware import PromptController, Guardrails, ObservabilityMiddleware
 
@@ -80,7 +81,7 @@ class ConversationalAgentBase:
         self.personality = personality
         self.user_id = user_id
         self.user_role = user_role
-        self.conversation_id = conversation_id or f"conv_{datetime.now().timestamp()}"
+        self.conversation_id = conversation_id or str(uuid.uuid4())  # ✅ Usar UUID para unicidad
         
         # Inicializar middlewares
         self.prompt_controller = PromptController()

@@ -5,7 +5,7 @@ Base Workflow - Clase base para todos los workflows
 Define la estructura común para workflows determinísticos.
 """
 
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, Optional, List, Tuple
 from datetime import datetime
 from enum import Enum
 from pydantic import BaseModel, Field
@@ -90,7 +90,7 @@ class WorkflowBase:
         # Implementar en subclases
         return True
     
-    async def validate_input(self, **kwargs) -> tuple[bool, List[str]]:
+    async def validate_input(self, **kwargs) -> Tuple[bool, List[str]]:
         """
         Validar datos de entrada del workflow.
         
