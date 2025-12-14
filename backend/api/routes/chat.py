@@ -2,8 +2,13 @@
 Chat Endpoint - API para el agente conversacional
 =================================================
 
-Expone el agente LangGraph como endpoint REST.
+Expone el agente LangGraph como endpoint REST con middleware integrado.
 Requiere autenticación JWT.
+
+**NUEVO (Fase 2):**
+- Middleware de seguridad (PromptController, Guardrails)
+- Observabilidad con LangSmith
+- Respuestas con información de escalamiento
 """
 
 import logging
@@ -19,11 +24,19 @@ from backend.api.deps.auth import get_current_active_user
 from backend.schemas.auth.models import SysUsuario
 from backend.agents.graph import run_agent
 
+# ✅ NUEVO: Importar middleware
+from backend.middleware import PromptController, Guardrails, ObservabilityMiddleware
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/chat", tags=["Chat - Agente IA"])
 
 # Rate limiter for chat endpoint to protect Anthropic API costs
 limiter = Limiter(key_func=get_remote_address)
+
+# ✅ NUEVO: Inicializar middleware
+prompt_controller = PromptController()
+guardrails = Guardrails()
+observability = ObservabilityMiddleware()
 
 
 # =============================================================================
@@ -55,6 +68,11 @@ class ChatResponse(BaseModel):
     session_id: str = Field(..., description="ID de sesión para seguimiento (legacy)")
     thread_id: Optional[str] = Field(None, description="ID de hilo para checkpointing (NUEVO - Fase 1)")
     processing_time_ms: float = Field(..., description="Tiempo de procesamiento")
+    # ✅ NUEVO: Campos de middleware
+    requires_human_review: bool = Field(False, description="Si requiere revisión humana (Fase 2)")
+    escalation_reason: Optional[str] = Field(None, description="Razón de escalamiento (Fase 2)")
+    risk_level: Optional[str] = Field(None, description="Nivel de riesgo del prompt (Fase 2)")
+    trace_id: Optional[str] = Field(None, description="ID de trace para observabilidad (Fase 2)")
     
     class Config:
         json_schema_extra = {
@@ -65,7 +83,11 @@ class ChatResponse(BaseModel):
                 "intent": "query_read",
                 "session_id": "abc-123",
                 "thread_id": "5_webapp_abc-123",
-                "processing_time_ms": 523.5
+                "processing_time_ms": 523.5,
+                "requires_human_review": False,
+                "escalation_reason": None,
+                "risk_level": "safe",
+                "trace_id": "trace_123abc"
             }
         }
 
@@ -90,6 +112,13 @@ class ChatResponse(BaseModel):
     - Usa thread_id para mantener contexto entre turnos de conversación
     - El frontend debe enviar el mismo thread_id para continuar una conversación
     
+    **NUEVO (Fase 2 - Middleware y Guardrails):**
+    - Validación y sanitización de prompts
+    - Detección automática de riesgos
+    - Guardrails para temas clínicos sensibles
+    - Escalamiento a humano cuando es necesario
+    - Trazabilidad completa con LangSmith
+    
     **Rate Limiting:** 30 requests/minute per IP para proteger costos de API de IA.
     
     **Requiere autenticación.** Los resultados se filtran según el rol del usuario.
@@ -105,6 +134,7 @@ async def chat(
     Endpoint principal del chat con el agente.
     
     NUEVO (Fase 1): Soporta memoria episódica mediante thread_id.
+    NUEVO (Fase 2): Integra middleware de seguridad y guardrails.
     """
     import time
     start_time = time.time()
@@ -115,16 +145,95 @@ async def chat(
     )
     
     try:
+        # ✅ FASE 2 - PASO 1: Validar y sanitizar prompt
+        validation = prompt_controller.validate_and_sanitize(
+            chat_request.message,
+            current_user.rol
+        )
+        
+        if not validation.is_valid:
+            logger.warning(f"Prompt inválido de usuario {current_user.id_usuario}: {validation.warnings}")
+            return ChatResponse(
+                success=False,
+                message="❌ Tu mensaje no pudo ser procesado. Por favor, reformúlalo sin caracteres especiales o comandos.",
+                data={"validation_errors": validation.warnings},
+                intent=None,
+                session_id=chat_request.session_id or "",
+                thread_id=chat_request.thread_id,
+                processing_time_ms=round((time.time() - start_time) * 1000, 2),
+                requires_human_review=False,
+                risk_level=validation.risk_level.value,
+                trace_id=None
+            )
+        
+        # ✅ FASE 2 - PASO 2: Verificar guardrails
+        guardrail_decision = guardrails.check(
+            validation.sanitized_prompt,
+            current_user.rol,
+            intent=None,  # Intent aún no clasificado
+            context={"user_id": current_user.id_usuario}
+        )
+        
+        if guardrail_decision.should_block:
+            logger.warning(
+                f"Guardrail bloqueó mensaje de usuario {current_user.id_usuario}: "
+                f"{guardrail_decision.reason.value}"
+            )
+            
+            # Registrar en observabilidad
+            trace_id = observability.trace_interaction(
+                user_id=current_user.id_usuario,
+                user_role=current_user.rol,
+                user_input=chat_request.message,
+                agent_response=guardrail_decision.message,
+                intent="blocked_by_guardrail",
+                execution_time_ms=round((time.time() - start_time) * 1000, 2),
+                metadata={
+                    "guardrail_reason": guardrail_decision.reason.value,
+                    "blocked": True
+                }
+            )
+            
+            return ChatResponse(
+                success=False,
+                message=guardrail_decision.message,
+                data={"blocked_reason": guardrail_decision.reason.value},
+                intent="blocked_by_guardrail",
+                session_id=chat_request.session_id or "",
+                thread_id=chat_request.thread_id,
+                processing_time_ms=round((time.time() - start_time) * 1000, 2),
+                requires_human_review=guardrail_decision.requires_human,
+                escalation_reason=guardrail_decision.escalation_notes,
+                risk_level=validation.risk_level.value,
+                trace_id=trace_id
+            )
+        
+        # ✅ FASE 2 - PASO 3: Procesar con el agente (usando prompt sanitizado)
         result = await run_agent(
-            user_query=chat_request.message,
+            user_query=validation.sanitized_prompt,  # ✅ Usar prompt sanitizado
             user_id=current_user.id_usuario,
             user_role=current_user.rol,
             session_id=chat_request.session_id,
-            thread_id=chat_request.thread_id,  # ✅ NUEVO: Pasar thread_id para checkpointing
+            thread_id=chat_request.thread_id,
             origin="webapp",
         )
         
         processing_time = (time.time() - start_time) * 1000
+        
+        # ✅ FASE 2 - PASO 4: Registrar en observabilidad
+        trace_id = observability.trace_interaction(
+            user_id=current_user.id_usuario,
+            user_role=current_user.rol,
+            user_input=chat_request.message,
+            agent_response=result.get("response_text", ""),
+            intent=result.get("intent"),
+            execution_time_ms=round(processing_time, 2),
+            metadata={
+                "risk_level": validation.risk_level.value,
+                "thread_id": chat_request.thread_id,
+                "success": result.get("success", False)
+            }
+        )
         
         return ChatResponse(
             success=result.get("success", False),
@@ -132,13 +241,28 @@ async def chat(
             data=result.get("response_data"),
             intent=result.get("intent"),
             session_id=result.get("session_id", ""),
-            thread_id=result.get("thread_id"),  # ✅ NUEVO: Retornar thread_id para continuidad
+            thread_id=result.get("thread_id"),
             processing_time_ms=round(processing_time, 2),
+            requires_human_review=False,  # El agente actual no genera esta flag, pero está preparado
+            escalation_reason=None,
+            risk_level=validation.risk_level.value,
+            trace_id=trace_id
         )
         
     except Exception as e:
         logger.exception(f"Error en chat endpoint: {e}")
         processing_time = (time.time() - start_time) * 1000
+        
+        # ✅ FASE 2: Registrar error en observabilidad
+        observability.log_error(
+            error_type="CHAT_ENDPOINT_ERROR",
+            error_message=str(e),
+            user_id=current_user.id_usuario,
+            context={
+                "message": chat_request.message[:100],
+                "thread_id": chat_request.thread_id
+            }
+        )
         
         return ChatResponse(
             success=False,
@@ -146,14 +270,18 @@ async def chat(
             data=None,
             intent=None,
             session_id=chat_request.session_id or "",
-            thread_id=chat_request.thread_id,  # ✅ NUEVO: Mantener thread_id en error
+            thread_id=chat_request.thread_id,
             processing_time_ms=round(processing_time, 2),
+            requires_human_review=True,
+            escalation_reason=f"Error técnico: {str(e)}",
+            risk_level="high",
+            trace_id=None
         )
 
 
 @router.get("/health", summary="Estado del agente")
 async def chat_health():
-    """Health check del agente."""
+    """Health check del agente con información de middleware."""
     try:
         from backend.agents.graph import get_compiled_graph
         from backend.api.core.config import get_settings
@@ -166,6 +294,13 @@ async def chat_health():
             "agent_ready": graph is not None,
             "llm_configured": bool(settings.ANTHROPIC_API_KEY),
             "model": settings.CLAUDE_MODEL,
+            # ✅ NUEVO: Estado del middleware
+            "middleware": {
+                "prompt_controller": "active",
+                "guardrails": "active",
+                "observability": "active" if observability.enabled else "disabled",
+                "langsmith_configured": bool(observability.enabled)
+            },
             "timestamp": datetime.utcnow().isoformat(),
         }
     except Exception as e:
