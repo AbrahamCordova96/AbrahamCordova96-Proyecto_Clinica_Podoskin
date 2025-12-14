@@ -19,6 +19,10 @@ from backend.schemas.core.models import Paciente
 
 logger = logging.getLogger(__name__)
 
+# Constants for user-facing messages
+PATIENT_NOT_FOUND_MSG = "Paciente no encontrado"
+NA_VALUE = "N/A"
+
 
 class AppointmentManager:
     """
@@ -476,8 +480,8 @@ class AppointmentManager:
                 paciente_id_val = row[IDX_PACIENTE_ID]
                 paciente_data = pacientes_dict.get(paciente_id_val, {
                     "id": paciente_id_val,
-                    "nombre": "Paciente no encontrado",
-                    "telefono": "N/A"
+                    "nombre": PATIENT_NOT_FOUND_MSG,
+                    "telefono": NA_VALUE
                 })
                 
                 cita = {
