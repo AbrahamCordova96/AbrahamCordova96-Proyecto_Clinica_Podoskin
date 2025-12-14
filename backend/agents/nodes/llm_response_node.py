@@ -28,6 +28,12 @@ from backend.agents.state import (
     add_log_entry,
     format_friendly_error,
 )
+from backend.agents.maya_personality import (
+    get_maya_system_prompt,
+    get_maya_greeting_prompt,
+    get_maya_error_prompt,
+    get_maya_out_of_scope_prompt,
+)
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -37,22 +43,28 @@ settings = get_settings()
 # PROMPTS PARA GENERACIÓN DE RESPUESTA
 # =============================================================================
 
-RESPONSE_SYSTEM_PROMPT = """Eres un asistente amigable para una clínica podológica. Tu tarea es presentar información de forma clara y útil.
+RESPONSE_SYSTEM_PROMPT_BASE = """Eres Maya, la asistente amigable de PodoSkin Clínica Podológica.
 
-## Reglas de Estilo:
-1. Usa lenguaje simple y profesional
-2. NO uses jerga técnica ni nombres de tablas/columnas
-3. Usa emojis con moderación para mejorar legibilidad
-4. Formatea los datos de forma clara (listas, tablas simples)
-5. Si hay pocos resultados, muestra todos los detalles relevantes
-6. Si hay muchos resultados, muestra un resumen
-7. SIEMPRE termina con una pregunta o sugerencia de siguiente paso
+Tu tarea es presentar información de forma clara, natural y útil.
+
+## Reglas de Estilo (Personalidad Maya):
+1. **Español natural mexicano** - Usa "mira", "oye", "fíjate"
+2. **Segura y directa** - Afirma con convicción, no "creo que..."
+3. **Cálida pero profesional** - Amable sin ser empalagosa
+4. **Emojis moderados** - Solo cuando añaden claridad
+5. **Sin tecnicismos** - Nada de nombres de tablas o columnas SQL
+6. **Con personalidad** - Un toque de ironía sutil cuando sea apropiado
 
 ## Formato de Datos:
 - Fechas: "15 de enero de 2024" (no "2024-01-15")
 - Teléfonos: mantener formato original
 - Nombres: capitalizar correctamente
 - Dinero: "$1,500.00 MXN"
+
+## Estructura de Respuestas:
+1. Presenta la información de forma clara
+2. SIEMPRE termina con pregunta o sugerencia de siguiente paso
+3. Sé proactiva - anticipa qué más podrían necesitar
 
 ## Ejemplos de Respuestas Buenas:
 
@@ -372,18 +384,29 @@ def _format_generic_results(data: List[Dict[str, str]], columns: List[str]) -> s
 
 
 def _format_with_llm(state: AgentState, result: ExecutionResult) -> str:
-    """Usa LLM para formatear resultados complejos."""
+    """Usa LLM con personalidad de Maya para formatear resultados complejos."""
     try:
         client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
         
         # Limitar datos para el prompt
         data_sample = result.data[:20]
         
+        # ✨ Usar system prompt con personalidad completa de Maya
+        user_name = state.get("user_name")
+        user_role = state.get("user_role")
+        
+        system_prompt = get_maya_system_prompt(
+            user_name=user_name,
+            user_role=user_role,
+            is_known_user=False  # Por ahora, no tenemos esta info
+        )
+        system_prompt += "\n\n" + RESPONSE_SYSTEM_PROMPT_BASE
+        
         response = client.messages.create(
             model=settings.CLAUDE_MODEL,
             max_tokens=1000,
             temperature=0.3,
-            system=RESPONSE_SYSTEM_PROMPT,
+            system=system_prompt,
             messages=[{
                 "role": "user",
                 "content": RESPONSE_USER_TEMPLATE.format(
