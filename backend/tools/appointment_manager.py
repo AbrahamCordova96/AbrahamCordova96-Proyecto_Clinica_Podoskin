@@ -386,19 +386,19 @@ class AppointmentManager:
             
             query_citas = text("""
                 SELECT 
-                    c.id_cita,
-                    c.fecha_cita,
-                    c.hora_inicio,
-                    c.hora_fin,
-                    c.status,
-                    c.notas_agendamiento,
-                    c.paciente_id,
-                    c.podologo_id,
-                    c.servicio_id,
-                    c.created_at,
-                    pod.nombre_completo as podologo_nombre,
-                    s.nombre_servicio,
-                    s.precio_base
+                    c.id_cita,               -- 0
+                    c.fecha_cita,            -- 1
+                    c.hora_inicio,           -- 2
+                    c.hora_fin,              -- 3
+                    c.status,                -- 4
+                    c.notas_agendamiento,    -- 5
+                    c.paciente_id,           -- 6
+                    c.podologo_id,           -- 7
+                    c.servicio_id,           -- 8
+                    c.created_at,            -- 9
+                    pod.nombre_completo,     -- 10
+                    s.nombre_servicio,       -- 11
+                    s.precio_base            -- 12
                 FROM ops.citas c
                 JOIN ops.podologos pod ON c.podologo_id = pod.id_podologo
                 LEFT JOIN ops.catalogo_servicios s ON c.servicio_id = s.id_servicio
@@ -411,6 +411,21 @@ class AppointmentManager:
                 ORDER BY c.fecha_cita, c.hora_inicio
                 LIMIT :limit
             """)
+            
+            # Define column indices as constants for maintainability
+            IDX_ID_CITA = 0
+            IDX_FECHA_CITA = 1
+            IDX_HORA_INICIO = 2
+            IDX_HORA_FIN = 3
+            IDX_STATUS = 4
+            IDX_NOTAS = 5
+            IDX_PACIENTE_ID = 6
+            IDX_PODOLOGO_ID = 7
+            IDX_SERVICIO_ID = 8
+            IDX_CREATED_AT = 9
+            IDX_PODOLOGO_NOMBRE = 10
+            IDX_SERVICIO_NOMBRE = 11
+            IDX_SERVICIO_PRECIO = 12
             
             params = {
                 "fecha_inicio": fecha_inicio,
@@ -428,7 +443,7 @@ class AppointmentManager:
             # QUERY PASO 2: Obtener datos de pacientes desde clinic.pacientes
             # =========================================================================
             # Extraer los IDs de pacientes que necesitamos
-            paciente_ids = list(set([row[6] for row in citas_raw]))  # row[6] es paciente_id
+            paciente_ids = list(set([row[IDX_PACIENTE_ID] for row in citas_raw]))
             
             pacientes_dict = {}
             if paciente_ids:
@@ -458,31 +473,31 @@ class AppointmentManager:
             citas = []
             
             for row in citas_raw:
-                paciente_id = row[6]
-                paciente_data = pacientes_dict.get(paciente_id, {
-                    "id": paciente_id,
+                paciente_id_val = row[IDX_PACIENTE_ID]
+                paciente_data = pacientes_dict.get(paciente_id_val, {
+                    "id": paciente_id_val,
                     "nombre": "Paciente no encontrado",
                     "telefono": "N/A"
                 })
                 
                 cita = {
-                    "id_cita": row[0],
-                    "fecha_cita": row[1].isoformat() if row[1] else None,
-                    "hora_inicio": row[2].strftime("%H:%M") if row[2] else None,
-                    "hora_fin": row[3].strftime("%H:%M") if row[3] else None,
-                    "status": row[4],
-                    "notas": row[5],
+                    "id_cita": row[IDX_ID_CITA],
+                    "fecha_cita": row[IDX_FECHA_CITA].isoformat() if row[IDX_FECHA_CITA] else None,
+                    "hora_inicio": row[IDX_HORA_INICIO].strftime("%H:%M") if row[IDX_HORA_INICIO] else None,
+                    "hora_fin": row[IDX_HORA_FIN].strftime("%H:%M") if row[IDX_HORA_FIN] else None,
+                    "status": row[IDX_STATUS],
+                    "notas": row[IDX_NOTAS],
                     "paciente": paciente_data,
                     "podologo": {
-                        "id": row[7],
-                        "nombre": row[10]
+                        "id": row[IDX_PODOLOGO_ID],
+                        "nombre": row[IDX_PODOLOGO_NOMBRE]
                     },
                     "servicio": {
-                        "id": row[8],
-                        "nombre": row[11],
-                        "precio": float(row[12]) if row[12] else 0
+                        "id": row[IDX_SERVICIO_ID],
+                        "nombre": row[IDX_SERVICIO_NOMBRE],
+                        "precio": float(row[IDX_SERVICIO_PRECIO]) if row[IDX_SERVICIO_PRECIO] else 0
                     },
-                    "creada_en": row[9].isoformat() if row[9] else None
+                    "creada_en": row[IDX_CREATED_AT].isoformat() if row[IDX_CREATED_AT] else None
                 }
                 citas.append(cita)
             
